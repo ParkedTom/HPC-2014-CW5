@@ -11,3 +11,12 @@
 *.lai
 *.la
 *.a
+
+#Binaries
+bin/
+
+#RAW image files
+*.raw
+
+#Temp Files
+*~
