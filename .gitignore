@@ -20,3 +20,6 @@ bin/
 
 #Temp Files
 *~
+
+# DS_STORE
+.DS_Store
