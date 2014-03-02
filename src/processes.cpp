@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+#include "tbb/parallel_for.h"
 
 ////////////////////////////////////////////
 // Routines for bringing in binary images
@@ -132,7 +133,7 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
 
-
+//erode function with parallel for outer loop vmin OpenCL Kernels
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
