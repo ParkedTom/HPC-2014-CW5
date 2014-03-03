@@ -139,8 +139,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	
-	tbb::parallel_for(unsigned(0), w, [=](unsigned x)
-	{
+	for(unsigned x=0;x<w;x++){
 		if(x==0){
 			out(0,0)=vmin(in(0,0), in(0,1), in(1,0));
 			for(unsigned y=1;y<h-1;y++){
@@ -160,7 +159,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 			}
 			out(w-1,h-1)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
 		}
-	});
+	}
 }
 
 uint32_t vmax(uint32_t a, uint32_t b)
