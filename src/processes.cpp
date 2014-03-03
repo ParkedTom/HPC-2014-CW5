@@ -124,13 +124,31 @@ uint32_t vmin(uint32_t a, uint32_t b)
 { return std::min(a,b); }
 
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c)
-{ return std::min(a,std::min(b,c)); }
+{ 
+    if(a == 0 | b == 0 | c == 0){
+	return (uint32_t) 0;
+    else{
+	return std::min(a,std::min(b,c)); 
+    }
+}
 
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
-{ return std::min(std::min(a,d),std::min(b,c)); }
+{ 
+    if(a == 0 | b == 0 | c == 0 | d == 0){
+	return (uint32_t) 0;
+    }else
+	return std::min(std::min(a,d),std::min(b,c)); 
+    }
+}
 
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
-{ return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
+{ 
+    if(a == 0 | b ==0 | c == 0 | d == 0 | e == 0)
+	return (uint32_t) 0;
+    else{
+	return std::min(e, std::min(std::min(a,d),std::min(b,c))); 
+    } 
+}
 
 
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
