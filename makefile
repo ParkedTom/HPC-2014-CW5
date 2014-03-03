@@ -1,4 +1,4 @@
-CPPFLAGS = -std=c++11 -Wall -stdlib=libstdc++ -I include -framework OpenCL
+CPPFLAGS = -std=c++11 -Wall -stdlib=libstdc++ -I include
 LDFLAGS = 
 LDLIBS = -lm -ltbb
 CPPFLAGS += -O2
