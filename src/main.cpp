@@ -47,19 +47,23 @@ int main(int argc, char *argv[])
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
 		
-		uint64_t cbRaw=uint64_t(w)*h*bits/8;
+		
+		uint64_t cbRaw=uint64_t(w)*4*bits/8; //take four rows at a time
+		uint32_t count = 0;
 		std::vector<uint64_t> raw(cbRaw/8);
 		
-		std::vector<uint32_t> pixels(w*h);
+		std::vector<uint32_t> pixels(w*5);
+		std::vector<uint32_t> zeros(w,0);
+		std::vector<uint32_t> store(w);
 		
 		while(1){
 			if(!read_blob(STDIN_FILENO, cbRaw, &raw[0]))
 				break;	// No more images
-			unpack_blob(w, h, bits, &raw[0], &pixels[0]);		
+			unpack_blob(w, h, bits, &raw[0], &pixels[w]);
 			
 			process(levels, w, h, bits, pixels);
 			//invert(levels, w, h, bits, pixels);
-			
+						
 			pack_blob(w, h, bits, &pixels[0], &raw[0]);
 			write_blob(STDOUT_FILENO, cbRaw, &raw[0]);
 		}

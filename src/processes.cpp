@@ -140,24 +140,58 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	
 	for(unsigned x=0;x<w;x++){
-		if(x==0){
-			out(0,0)=vmin(in(0,0), in(0,1), in(1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(0,y)=vmin(in(0,y), in(0,y-1), in(1,y), in(0,y+1));
+		if(!count==0)
+		{
+			if(x==0)
+			{
+				out(0,0)=vmin(in(0,0), in(0,1));
+				for(unsigned y=1;y<h-1;y++)
+				{
+					out(0,y)=vmin(in(0,y), in(0,y-1), in(1,y), in(0,y+1));
+				}
+				out(0,h-1)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
+			}else if(x<w-1){
+				out(x,0)=vmin(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
+				for(unsigned y=1;y<h-1;y++)
+				{
+					out(x,y)=vmin(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
+				}
+				out(x,h-1)=vmin(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+			}else{
+				out(w-1,0)=vmin(in(w-1,0), in(w-1,1), in(w-2,0));
+				for(unsigned y=1;y<h-1;y++)
+				{
+					out(w-1,y)=vmin(in(w-1,y), in(w-1,y-1), in(w-2,y), in(w-1,y+1));
+				}
+				out(w-1,h-1)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
 			}
-			out(0,h-1)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
+		}
+	}else{
+		if(x==0)
+		{
+			out(0,0)=vmin(in(0,1), in(0,2), in(1,1));
+			for(unsigned y=1;y<h-2;y++)
+			{
+				out(0,y)=vmin(in(0,y+1), in(0,y), in(1,y+1), in(0,y+2));
+			}
+			out(0,h-2)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
+			out(0,h-1) = out(0,h-2);
 		}else if(x<w-1){
-			out(x,0)=vmin(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(x,y)=vmin(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
+			out(x,0)=vmin(in(x,1), in(x-1,1), in(x,2), in(x+1,1));
+			for(unsigned y=1;y<h-2;y++)
+			{
+				out(x,y)=vmin(in(x,y+1), in(x-1,y+1), in(x,y), in(x,y+2), in(x+1,y+1));
 			}
-			out(x,h-1)=vmin(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+			out(x,h-2)=vmin(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+			out(x,h-1) = out(x,h-2);
 		}else{
-			out(w-1,0)=vmin(in(w-1,0), in(w-1,1), in(w-2,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(w-1,y)=vmin(in(w-1,y), in(w-1,y-1), in(w-2,y), in(w-1,y+1));
+			out(w-1,0)=vmin(in(w-1,1), in(w-1,2), in(w-2,1));
+			for(unsigned y=1;y<h-2;y++)
+			{
+				out(w-1,y+1)=vmin(in(w-1,y+1), in(w-1,y), in(w-2,y+1), in(w-1,y+2));
 			}
-			out(w-1,h-1)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
+			out(w-1,h-2)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
+			out(w-1,h-1) = out(w-1,h-2);
 		}
 	}
 }
@@ -174,30 +208,64 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::max(e, std::max(std::max(a,d),std::max(b,c))); }
 
-void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
+void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	
 	for(unsigned x=0;x<w;x++){
-		if(x==0){
-			out(0,0)=vmax(in(0,0), in(0,1), in(1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(0,y)=vmax(in(0,y), in(0,y-1), in(1,y), in(0,y+1));
+		if(!count==0)
+		{
+			if(x==0)
+			{
+				out(0,0)=vmax(in(0,0), in(0,1));
+				for(unsigned y=1;y<h-1;y++)
+				{
+					out(0,y)=vmax(in(0,y), in(0,y-1), in(1,y), in(0,y+1));
+				}
+				out(0,h-1)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
+			}else if(x<w-1){
+				out(x,0)=vmax(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
+				for(unsigned y=1;y<h-1;y++)
+				{
+					out(x,y)=vmax(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
+				}
+				out(x,h-1)=vmax(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+			}else{
+				out(w-1,0)=vmax(in(w-1,0), in(w-1,1), in(w-2,0));
+				for(unsigned y=1;y<h-1;y++)
+				{
+					out(w-1,y)=vmax(in(w-1,y), in(w-1,y-1), in(w-2,y), in(w-1,y+1));
+				}
+				out(w-1,h-1)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
 			}
-			out(0,h-1)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
+		}
+	}else{
+		if(x==0)
+		{
+			out(0,0)=vmax(in(0,1), in(0,2), in(1,1));
+			for(unsigned y=1;y<h-2;y++)
+			{
+				out(0,y)=vmax(in(0,y+1), in(0,y), in(1,y+1), in(0,y+2));
+			}
+			out(0,h-2)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
+			out(0,h-1) = out(0,h-2);
 		}else if(x<w-1){
-			out(x,0)=vmax(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(x,y)=vmax(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
+			out(x,0)=vmax(in(x,1), in(x-1,1), in(x,2), in(x+1,1));
+			for(unsigned y=1;y<h-2;y++)
+			{
+				out(x,y)=vmax(in(x,y+1), in(x-1,y+1), in(x,y), in(x,y+2), in(x+1,y+1));
 			}
-			out(x,h-1)=vmax(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+			out(x,h-2)=vmax(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+			out(x,h-1) = out(x,h-2);
 		}else{
-			out(w-1,0)=vmax(in(w-1,0), in(w-1,1), in(w-2,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(w-1,y)=vmax(in(w-1,y), in(w-1,y-1), in(w-2,y), in(w-1,y+1));
+			out(w-1,0)=vmax(in(w-1,1), in(w-1,2), in(w-2,1));
+			for(unsigned y=1;y<h-2;y++)
+			{
+				out(w-1,y+1)=vmax(in(w-1,y+1), in(w-1,y), in(w-2,y+1), in(w-1,y+2));
 			}
-			out(w-1,h-1)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
+			out(w-1,h-2)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
+			out(w-1,h-1) = out(w-1,h-2);
 		}
 	}
 }
