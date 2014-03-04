@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
-#include "tbb/parallel_for.h"
+//#include "tbb/parallel_for.h"
 
 ////////////////////////////////////////////
 // Routines for bringing in binary images
@@ -134,7 +134,7 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
 
 //erode function with parallel for outer loop vmin OpenCL Kernels
-void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
+void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
@@ -151,7 +151,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(0,h-1)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
 			}else if(x<w-1){
-				out(x,0)=vmin(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
+				out(x,0)=vmin(in(x,0), in(x,1));
 				for(unsigned y=1;y<h-1;y++)
 				{
 					out(x,y)=vmin(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
@@ -165,33 +165,33 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1,h-1)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
 			}
-		}
-	}else{
-		if(x==0)
-		{
-			out(0,0)=vmin(in(0,1), in(0,2), in(1,1));
-			for(unsigned y=1;y<h-2;y++)
-			{
-				out(0,y)=vmin(in(0,y+1), in(0,y), in(1,y+1), in(0,y+2));
-			}
-			out(0,h-2)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
-			out(0,h-1) = out(0,h-2);
-		}else if(x<w-1){
-			out(x,0)=vmin(in(x,1), in(x-1,1), in(x,2), in(x+1,1));
-			for(unsigned y=1;y<h-2;y++)
-			{
-				out(x,y)=vmin(in(x,y+1), in(x-1,y+1), in(x,y), in(x,y+2), in(x+1,y+1));
-			}
-			out(x,h-2)=vmin(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
-			out(x,h-1) = out(x,h-2);
 		}else{
-			out(w-1,0)=vmin(in(w-1,1), in(w-1,2), in(w-2,1));
-			for(unsigned y=1;y<h-2;y++)
+			if(x==0)
 			{
-				out(w-1,y+1)=vmin(in(w-1,y+1), in(w-1,y), in(w-2,y+1), in(w-1,y+2));
+				out(0,0)=vmin(in(0,1), in(0,2), in(1,1));
+				for(unsigned y=1;y<h-2;y++)
+				{
+					out(0,y)=vmin(in(0,y+1), in(0,y), in(1,y+1), in(0,y+2));
+				}
+				out(0,h-2)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
+				out(0,h-1) = out(0,h-2);
+			}else if(x<w-1){
+				out(x,0)=vmin(in(x,1), in(x-1,1), in(x,2), in(x+1,1));
+				for(unsigned y=1;y<h-2;y++)
+				{
+					out(x,y)=vmin(in(x,y+1), in(x-1,y+1), in(x,y), in(x,y+2), in(x+1,y+1));
+				}
+				out(x,h-2)=vmin(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+				out(x,h-1) = out(x,h-2);
+			}else{
+				out(w-1,0)=vmin(in(w-1,1), in(w-1,2), in(w-2,1));
+				for(unsigned y=1;y<h-2;y++)
+				{
+					out(w-1,y+1)=vmin(in(w-1,y+1), in(w-1,y), in(w-2,y+1), in(w-1,y+2));
+				}
+				out(w-1,h-2)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
+				out(w-1,h-1) = out(w-1,h-2);
 			}
-			out(w-1,h-2)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
-			out(w-1,h-1) = out(w-1,h-2);
 		}
 	}
 }
@@ -225,7 +225,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				}
 				out(0,h-1)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
 			}else if(x<w-1){
-				out(x,0)=vmax(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
+				out(x,0)=vmax(in(x,0), in(x,1));
 				for(unsigned y=1;y<h-1;y++)
 				{
 					out(x,y)=vmax(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
@@ -239,33 +239,33 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				}
 				out(w-1,h-1)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
 			}
-		}
-	}else{
-		if(x==0)
-		{
-			out(0,0)=vmax(in(0,1), in(0,2), in(1,1));
-			for(unsigned y=1;y<h-2;y++)
-			{
-				out(0,y)=vmax(in(0,y+1), in(0,y), in(1,y+1), in(0,y+2));
-			}
-			out(0,h-2)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
-			out(0,h-1) = out(0,h-2);
-		}else if(x<w-1){
-			out(x,0)=vmax(in(x,1), in(x-1,1), in(x,2), in(x+1,1));
-			for(unsigned y=1;y<h-2;y++)
-			{
-				out(x,y)=vmax(in(x,y+1), in(x-1,y+1), in(x,y), in(x,y+2), in(x+1,y+1));
-			}
-			out(x,h-2)=vmax(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
-			out(x,h-1) = out(x,h-2);
 		}else{
-			out(w-1,0)=vmax(in(w-1,1), in(w-1,2), in(w-2,1));
-			for(unsigned y=1;y<h-2;y++)
+			if(x==0)
 			{
-				out(w-1,y+1)=vmax(in(w-1,y+1), in(w-1,y), in(w-2,y+1), in(w-1,y+2));
+				out(0,0)=vmax(in(0,1), in(0,2), in(1,1));
+				for(unsigned y=1;y<h-2;y++)
+				{
+					out(0,y)=vmax(in(0,y+1), in(0,y), in(1,y+1), in(0,y+2));
+				}
+				out(0,h-2)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
+				out(0,h-1) = out(0,h-2);
+			}else if(x<w-1){
+				out(x,0)=vmax(in(x,1), in(x-1,1), in(x,2), in(x+1,1));
+				for(unsigned y=1;y<h-2;y++)
+				{
+					out(x,y)=vmax(in(x,y+1), in(x-1,y+1), in(x,y), in(x,y+2), in(x+1,y+1));
+				}
+				out(x,h-2)=vmax(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
+				out(x,h-1) = out(x,h-2);
+			}else{
+				out(w-1,0)=vmax(in(w-1,1), in(w-1,2), in(w-2,1));
+				for(unsigned y=1;y<h-2;y++)
+				{
+					out(w-1,y+1)=vmax(in(w-1,y+1), in(w-1,y), in(w-2,y+1), in(w-1,y+2));
+				}
+				out(w-1,h-2)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
+				out(w-1,h-1) = out(w-1,h-2);
 			}
-			out(w-1,h-2)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
-			out(w-1,h-1) = out(w-1,h-2);
 		}
 	}
 }
@@ -273,7 +273,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 ///////////////////////////////////////////////////////////////////
 // Composite image processing
 
-void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels)
+void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels, uint32_t count)
 {
 	std::vector<uint32_t> buffer(w*h);
 	
@@ -283,11 +283,11 @@ void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<
 	auto rev=levels < 0 ? dilate : erode;
 	
 	for(int i=0;i<std::abs(levels);i++){
-		fwd(w, h, pixels, buffer);
+		fwd(w, h, pixels, buffer, count);
 		std::swap(pixels, buffer);
 	}
 	for(int i=0;i<std::abs(levels);i++){
-		rev(w,h,pixels, buffer);
+		rev(w,h,pixels, buffer, count);
 		std::swap(pixels, buffer);
 	}
 }

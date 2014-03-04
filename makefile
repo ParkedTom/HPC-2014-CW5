@@ -20,13 +20,11 @@ bin/process : src/main.cpp src/processes.cpp
 	clang++ $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert lenna.png -depth 2 gray:- | ./bin/original 512 512 2 -1 > output_original.raw
-	convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 -1 > output_process.raw
-	time dd if=/dev/zero bs=4194304 count=1 | ./bin/original 4096 4096 2 -1 > /dev/null
-	time dd if=/dev/zero bs=4194304 count=1 | ./bin/process 4096 4096 2 -1 > /dev/null
-	time dd if=/dev/zero bs=16777216 count=1 | ./bin/original 8192 8192 2 -1 > /dev/null
-	time dd if=/dev/zero bs=16777216 count=1 | ./bin/process 8192 8192 2 -1 > /dev/null
-	diff output_original.raw output_process.raw
+	convert lenna.png -depth 2 gray:- | ./bin/original 512 512 2 -1 > output.raw
+	convert -size 512x512 -depth 2 gray:output.raw output_process.png
+	
+	#convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 -1 | 
+	
 	
 all : bin/process bin/original
 	
