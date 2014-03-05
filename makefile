@@ -21,9 +21,8 @@ bin/process : src/main.cpp src/processes.cpp
 	
 test : bin/original bin/process
 	convert lenna.png -depth 2 gray:- | ./bin/original 512 512 2 -1 > output.raw
-	convert -size 512x512 -depth 2 gray:output.raw output_process.png
-	
-	#convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 -1 | 
+	convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 -1 > output_process.raw
+	diff output.raw output_process.raw
 	
 	
 all : bin/process bin/original
