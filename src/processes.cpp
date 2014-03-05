@@ -140,7 +140,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	
 	for(unsigned x=0;x<w;x++){
-		if(!count==0)
+		if(!(count==0))
 		{
 			if(x==0)
 			{
@@ -214,7 +214,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	
 	for(unsigned x=0;x<w;x++){
-		if(!count==0)
+		if(!(count==0))
 		{
 			if(x==0)
 			{

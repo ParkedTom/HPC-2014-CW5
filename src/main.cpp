@@ -63,40 +63,47 @@ int main(int argc, char *argv[])
 		std::vector<uint64_t> raw_final(cbRaw_final/8);
 		
 		std::vector<uint32_t> pixels(w*5);
-		std::vector<uint32_t> zeros(w,0);
 		std::vector<uint32_t> store(w);
 		
-		uint32_t end = h/4;
+		uint32_t count1 = 0;
+        uint32_t count2 = 0;
 		
 		while(1){
 			if(!read_blob(STDIN_FILENO, cbRaw, &raw[0]))
-				break;	// No more images
+            {
+                break;	// No more images   
+            }
 			unpack_blob(w, 4, bits, &raw[0], &pixels[w]);
-			if(count == 0)
+            
+			if(!(count == 0))
 			{
-				std::swap_ranges(pixels.begin(),pixels.begin()+w,zeros.begin());
-			}else{
-				std::swap_ranges(pixels.begin(),pixels.begin()+w, store.begin());
+				std::swap_ranges(pixels.begin(),pixels.begin()+w,store.begin());
+                count1++;
 			}
 			
 			process(levels, w, 5, bits, pixels, count);
 			//invert(levels, w, h, bits, pixels);
 			 
 			//store bottom row of pixels
-			std::swap_ranges(pixels.end()-w+1,pixels.end(),store.begin());
 			
-			if(count==0)
+            
+            count++;
+			
+			if(count==1)
 			{
+                std::swap_ranges(pixels.end()-w,pixels.end(),store.begin());
 				pack_blob(w, 3, bits, &pixels[0], &raw_init[0]);
 				write_blob(STDOUT_FILENO, cbRaw_init, &raw_init[0]);
-			}else if(++count==(h/4)){
+			}else if(count==(h/4)){
 				pack_blob(w, 5, bits, &pixels[0], &raw_final[0]);
 				write_blob(STDOUT_FILENO, cbRaw_final, &raw_final[0]);
 				count = 0;
 			}else{
+                std::swap_ranges(pixels.end()-w,pixels.end(),store.begin());
 				pack_blob(w, 4, bits, &pixels[0], &raw[0]);
 				write_blob(STDOUT_FILENO, cbRaw, &raw[0]);
 			}
+            
 		}
 		
 		return 0;
