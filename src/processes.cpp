@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+//#include "tbb/parallel_for.h"
 
 ////////////////////////////////////////////
 // Routines for bringing in binary images
@@ -150,32 +151,40 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
     } 
 }
 
-
-void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
+//erode function with parallel for outer loop vmin OpenCL Kernels
+void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
-	
-	for(unsigned x=0;x<w;x++){
-		if(x==0){
-			out(0,0)=vmin(in(0,0), in(0,1), in(1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(0,y)=vmin(in(0,y), in(0,y-1), in(1,y), in(0,y+1));
+	unsigned end = h + 2*levels;
+
+	for(unsigned y=0; y<end; y++)
+	{
+		if(y==0){ //First line should only be _processed_ for the first block
+			if(count == 0){
+				out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
+				for(unsigned x=1;x<w-1;x++)
+				{
+					out(x,0)=vmin(in(x,0), in(x-1,0), in(x+1,0), in(x,1));
+				}
+				out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
+			} //else do nothing
+		} else if(y==end-1 && count==LAST){ //Last line should only be _processed_ for final block - otherwise only read.
+			out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
+			for(unsigned x=1;x<w-1; x++)
+			{
+				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
 			}
-			out(0,h-1)=vmin(in(0,h-1), in(0,h-2), in(1,h-1));
-		}else if(x<w-1){
-			out(x,0)=vmin(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(x,y)=vmin(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
+			out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
+		} else if (y <= (end-levels)){
+			
+			out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
+			for(unsigned x=1; x<w-1; x++)
+			{
+				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
 			}
-			out(x,h-1)=vmin(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
-		}else{
-			out(w-1,0)=vmin(in(w-1,0), in(w-1,1), in(w-2,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(w-1,y)=vmin(in(w-1,y), in(w-1,y-1), in(w-2,y), in(w-1,y+1));
-			}
-			out(w-1,h-1)=vmin(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
-		}
+			out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
+		}			
 	}
 }
 
@@ -191,52 +200,61 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::max(e, std::max(std::max(a,d),std::max(b,c))); }
 
-void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
+void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
+	unsigned end = h + 2*levels;
 	
-	for(unsigned x=0;x<w;x++){
-		if(x==0){
-			out(0,0)=vmax(in(0,0), in(0,1), in(1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(0,y)=vmax(in(0,y), in(0,y-1), in(1,y), in(0,y+1));
+	for(unsigned y=0; y<end; y++)
+	{
+		if(y==0){ //First line should only be _processed_ for the first block
+			if(count == 0)
+			{
+				out(0,0) = vmax(in(0,0), in(0,1), in(1,0));
+				for(unsigned x=1;x<w-1;x++)
+				{
+					out(x,0)=vmax(in(x,0), in(x-1,0), in(x+1,0), in(x,1));
+				}
+				out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
+			}//else do nothing
+		} else if(y==end-1 && count==LAST){ //Last line should only be _processed_ for final block - otherwise only read.
+			out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
+			for(unsigned x=1;x<w-1; x++)
+			{
+				out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
 			}
-			out(0,h-1)=vmax(in(0,h-1), in(0,h-2), in(1,h-1));
-		}else if(x<w-1){
-			out(x,0)=vmax(in(x,0), in(x-1,0), in(x,1), in(x+1,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(x,y)=vmax(in(x,y), in(x-1,y), in(x,y-1), in(x,y+1), in(x+1,y));
+			out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
+		} else if(y < (end-levels)){
+			out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
+			for(unsigned x=1; x<w-1; x++)
+			{
+				out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
 			}
-			out(x,h-1)=vmax(in(x,h-1), in(x-1,h-1), in(x,h-2), in(x+1,h-1));
-		}else{
-			out(w-1,0)=vmax(in(w-1,0), in(w-1,1), in(w-2,0));
-			for(unsigned y=1;y<h-1;y++){
-				out(w-1,y)=vmax(in(w-1,y), in(w-1,y-1), in(w-2,y), in(w-1,y+1));
-			}
-			out(w-1,h-1)=vmax(in(w-1,h-1), in(w-1,h-2), in(w-2,h-1));
-		}
-	}
+			out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
+		}			
+	}//end
 }
 
 ///////////////////////////////////////////////////////////////////
 // Composite image processing
 
-void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels)
+void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels, uint32_t count)
 {
-	std::vector<uint32_t> buffer(w*h);
+	std::vector<uint32_t> buffer(pixels.size());
 	
 	// Depending on whether levels is positive or negative,
 	// we flip the order round.
 	auto fwd=levels < 0 ? erode : dilate;
 	auto rev=levels < 0 ? dilate : erode;
+	unsigned abslevels = std::abs(levels);
 	
-	for(int i=0;i<std::abs(levels);i++){
-		fwd(w, h, pixels, buffer);
+	for(int i=0;i<abslevels;i++){
+		fwd(w, h, pixels, buffer, count, abslevels);
 		std::swap(pixels, buffer);
 	}
 	for(int i=0;i<std::abs(levels);i++){
-		rev(w,h,pixels, buffer);
+		rev(w,h,pixels, buffer, count, abslevels);
 		std::swap(pixels, buffer);
 	}
 }

@@ -23,3 +23,16 @@ bin/
 
 # DS_STORE
 .DS_Store
+
+#Xcode project file
+*.xcodeproj
+*.xcworkspace
+!default.xcworkspace
+xcuserdata
+profile
+*.moved-aside
+DerivedData
+.idea/
+*.
+*.xcuserstate
+CW5/
