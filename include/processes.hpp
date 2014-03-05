@@ -7,6 +7,8 @@
 #include <iostream>
 #include <string>
 
+#define LAST 1
+
 uint64_t shuffle64(unsigned bits, uint64_t x);
 
 void unpack_blob(unsigned w, unsigned h, unsigned bits, const uint64_t *pRaw, uint32_t *pUnpacked);
@@ -25,7 +27,7 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d);
 
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e);
 
-void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count);
+void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels);
 
 uint32_t vmax(uint32_t a, uint32_t b);
 
@@ -35,7 +37,7 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d);
 
 uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e);
 
-void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count);
+void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels);
 
 void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels, uint32_t count);
 

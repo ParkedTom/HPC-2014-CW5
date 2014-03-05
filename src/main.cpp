@@ -7,11 +7,17 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+//remove before merging to master
+//#define XCODE
 
 int main(int argc, char *argv[])
 {
-    freopen("input.raw", "r", stdin);
+		std::cerr<<"Enter Main\n";
+		//remove before merging to master
+    #ifdef XCODE
+		freopen("input.raw", "r", stdin);
     freopen("output.raw", "w", stdout);
+		#endif
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
@@ -46,64 +52,71 @@ int main(int argc, char *argv[])
 		if(argc>4){
 			levels=atoi(argv[4]);
 		}
+		unsigned abslevels = std::abs(levels);
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
 		
 		
-		uint64_t cbRaw=uint64_t(w)*4*bits/8; //take four rows at a time
+		uint64_t cbRaw=uint64_t(w)*(h/2)*bits/8; //take four rows at a time
 		uint32_t count = 0;
 		std::vector<uint64_t> raw(cbRaw/8);
+		std::cerr<<"Create cbRaw\n";
+		
 		
 		//values for initial frame
-		uint64_t cbRaw_init=uint64_t(w)*3*bits/8;
+		uint64_t cbRaw_init=uint64_t(w)*((h/2)+(abslevels*2))*bits/8;
 		std::vector<uint64_t> raw_init(cbRaw_init/8);
 		
 		//values for final frame
-		uint64_t cbRaw_final=uint64_t(w)*5*bits/8;
+		uint64_t cbRaw_final=uint64_t(w)*((h/2)-(abslevels*2))*bits/8;
 		std::vector<uint64_t> raw_final(cbRaw_final/8);
 		
-		std::vector<uint32_t> pixels(w*5);
-		std::vector<uint32_t> store(w);
-		
-		uint32_t count1 = 0;
-        uint32_t count2 = 0;
+		std::vector<uint32_t> pixels(w*((h/2)+2*abslevels));
+		std::vector<uint32_t> store(w*4*abslevels);
 		
 		while(1){
-			if(!read_blob(STDIN_FILENO, cbRaw, &raw[0]))
-            {
-                break;	// No more images   
-            }
-			unpack_blob(w, 4, bits, &raw[0], &pixels[w]);
-            
-			if(!(count == 0))
+			std::cerr<<"While Loop\n";
+			if(count==0)
 			{
-				std::swap_ranges(pixels.begin(),pixels.begin()+w,store.begin());
-                count1++;
-			}
-			
-			process(levels, w, 5, bits, pixels, count);
-			//invert(levels, w, h, bits, pixels);
-			 
-			//store bottom row of pixels
-			
-            
-            count++;
-			
-			if(count==1)
-			{
-                std::swap_ranges(pixels.end()-w,pixels.end(),store.begin());
-				pack_blob(w, 3, bits, &pixels[0], &raw_init[0]);
-				write_blob(STDOUT_FILENO, cbRaw_init, &raw_init[0]);
-			}else if(count==(h/4)){
-				pack_blob(w, 5, bits, &pixels[0], &raw_final[0]);
-				write_blob(STDOUT_FILENO, cbRaw_final, &raw_final[0]);
-				count = 0;
-			}else{
-                std::swap_ranges(pixels.end()-w,pixels.end(),store.begin());
-				pack_blob(w, 4, bits, &pixels[0], &raw[0]);
+				if(!read_blob(STDIN_FILENO, cbRaw_init, &raw_init[0]))
+      	{
+      		break;	// No more images   
+      	}
+				std::cerr<<"Read first frame\n";
+				unpack_blob(w, ((h/2)+abslevels*2), bits, &raw_init[0], &pixels[0]);
+				std::cerr<<"Unpack first frame\n";
+				
+				//store bottom rows of pixels
+				std::copy(pixels.end()-(4*abslevels*w), pixels.end(), store.begin());
+				std::cerr<<"Copy bottom 4 rows to store\n";
+				
+				process(levels, w, (h/2), bits, pixels, count);
+				std::cerr<<"Process First Frame\n";
+				//invert(levels, w, h, bits, pixels);
+				
+	      count++;
+				pack_blob(w, h/2, bits, &pixels[0], &raw[0]);
+				std::cerr<<"Pack First Frame\n";
 				write_blob(STDOUT_FILENO, cbRaw, &raw[0]);
+				std::cerr<<"Write First Frame\n";
+			}else{
+				if(!read_blob(STDIN_FILENO, cbRaw_final, &raw_final[0]))
+      	{
+      		break;	// No more images   
+      	}
+				std::cerr<<"Read second frame\n";
+				unpack_blob(w, ((h/2)+abslevels*2), bits, &raw_final[0], &pixels[4*abslevels*w]);
+				std::cerr<<"Upack Second frame\n";
+				std::swap_ranges(pixels.begin(),pixels.begin()+4*abslevels*w,store.begin());
+				std::cerr<<"Put Stored Values at top of second frame\n";
+				process(levels, w, (h/2), bits, pixels, count);
+				std::cerr<<"Process Second frame\n";
+				
+				pack_blob(w, h/2, bits, &pixels[2*w*abslevels], &raw[0]);
+				std::cerr<<"Pack Second frame\n";
+				write_blob(STDOUT_FILENO, cbRaw, &raw[0]);
+				std::cerr<<"Write Second frame\n";
 			}
-            
 		}
 		
 		return 0;
