@@ -142,7 +142,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 
 	for(unsigned y=0; y<end; y++)
 	{
-		std::cerr<<"Erode for "<<y<<"\n";
 		if(y==0){ //First line should only be _processed_ for the first block
 			if(count == 0){
 				out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
@@ -230,18 +229,14 @@ void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<
 	// we flip the order round.
 	auto fwd=levels < 0 ? erode : dilate;
 	auto rev=levels < 0 ? dilate : erode;
-	std::cerr<<"Enter Process\n";
 	unsigned abslevels = std::abs(levels);
 	
 	for(int i=0;i<abslevels;i++){
-		std::cerr<<"Enter for\n";
 		fwd(w, h, pixels, buffer, count, abslevels);
-		std::cerr<<"Forward\n";
 		std::swap(pixels, buffer);
 	}
 	for(int i=0;i<std::abs(levels);i++){
 		rev(w,h,pixels, buffer, count, abslevels);
-		std::cerr<<"Create cbRaw\n";
 		std::swap(pixels, buffer);
 	}
 }
