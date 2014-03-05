@@ -134,7 +134,7 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
 
 //erode function with parallel for outer loop vmin OpenCL Kernels
-void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
+void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
@@ -142,7 +142,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 
 	for(unsigned y=0; y<end; y++)
 	{
-		std::cerr<<"Erode for "<<y<<"\n";
 		if(y==0){ //First line should only be _processed_ for the first block
 			if(count == 0){
 				out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
@@ -152,14 +151,14 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 			} //else do nothing
-		} else if(y==end-1 && count==LAST){ //Last line should only be _processed_ for final block - otherwise only read.
+		} else if((y >= (end-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
 			out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
 			for(unsigned x=1;x<w-1; x++)
 			{
 				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
 			}
 			out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
-		} else if (y <= (end-levels)){
+		} else if (y < (end-1)){
 			
 			out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 			for(unsigned x=1; x<w-1; x++)
@@ -183,7 +182,7 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::max(e, std::max(std::max(a,d),std::max(b,c))); }
 
-void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
+void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
@@ -191,7 +190,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 	
 	for(unsigned y=0; y<end; y++)
 	{
-		if(y==0){ //First line should only be _processed_ for the first block
+		if(y==0){ //First lines should only be _processed_ for the first block
 			if(count == 0)
 			{
 				out(0,0) = vmax(in(0,0), in(0,1), in(1,0));
@@ -201,20 +200,22 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				}
 				out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
 			}//else do nothing
-		} else if(y==end-1 && count==LAST){ //Last line should only be _processed_ for final block - otherwise only read.
+		} else if((y >= (end - 1) && count==(no_frames-1))){ //Last line should only be _processed_ for final block - otherwise only read.
 			out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
 			for(unsigned x=1;x<w-1; x++)
 			{
 				out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
 			}
 			out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
-		} else if(y < (end-levels)){
-			out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
-			for(unsigned x=1; x<w-1; x++)
-			{
-				out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
+		} else if(y < (end-1)){
+			if(count==0 || (count!=0 && y>=levels)){
+				out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
+				for(unsigned x=1; x<w-1; x++)
+				{
+					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
+				}
+				out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 			}
-			out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 		}			
 	}//end
 }
@@ -222,7 +223,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 ///////////////////////////////////////////////////////////////////
 // Composite image processing
 
-void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels, uint32_t count)
+void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector<uint32_t> &pixels, uint32_t count)
 {
 	std::vector<uint32_t> buffer(pixels.size());
 	
@@ -230,18 +231,14 @@ void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<
 	// we flip the order round.
 	auto fwd=levels < 0 ? erode : dilate;
 	auto rev=levels < 0 ? dilate : erode;
-	std::cerr<<"Enter Process\n";
 	unsigned abslevels = std::abs(levels);
 	
 	for(int i=0;i<abslevels;i++){
-		std::cerr<<"Enter for\n";
-		fwd(w, h, pixels, buffer, count, abslevels);
-		std::cerr<<"Forward\n";
+		fwd(w, h, pixels, buffer, count, abslevels, no_frames);
 		std::swap(pixels, buffer);
 	}
 	for(int i=0;i<std::abs(levels);i++){
-		rev(w,h,pixels, buffer, count, abslevels);
-		std::cerr<<"Create cbRaw\n";
+		rev(w,h,pixels, buffer, count, abslevels, no_frames);
 		std::swap(pixels, buffer);
 	}
 }
