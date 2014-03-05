@@ -7,18 +7,11 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
-//remove before merging to master
-//#define XCODE
 
 #define DATA 256
 
 int main(int argc, char *argv[])
 {
-		//remove before merging to master
-    #ifdef XCODE
-		freopen("input.raw", "r", stdin);
-    freopen("output.raw", "w", stdout);
-		#endif
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
@@ -56,9 +49,7 @@ int main(int argc, char *argv[])
 		unsigned abslevels = std::abs(levels);
 		
 		unsigned k = (h - 4*abslevels)/(DATA - 2*abslevels);
-		std::cerr<<h<<"\n"<<k<<"\n";
 		unsigned data = ((h-4*abslevels)/k) + 2*abslevels;
-		std::cerr<<data<<"\n";
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
 		
@@ -87,7 +78,6 @@ int main(int argc, char *argv[])
       	{
       		break;	// No more images   
       	}
-				std::cerr<<"read frame "<<count<<"\n";
 				unpack_blob(w, ((data)+abslevels*2), bits, &raw_init[0], &pixels[0]);
 				
 				//store bottom rows of pixels
@@ -96,24 +86,27 @@ int main(int argc, char *argv[])
 				process(levels, w, (data), k, pixels, count);
 				//invert(levels, w, h, bits, pixels);
 				
-	      count++;
+	      count++;//increment frame count
 				pack_blob(w, data, bits, &pixels[0], &raw_out[0]);
 				write_blob(STDOUT_FILENO, cbRaw_out, &raw_out[0]);
 			}else{
 				if(!read_blob(STDIN_FILENO, cbRaw_final, &raw_final[0]))
       	{
       		break;	// No more images   
-      	}
-				std::cerr<<"read frame "<<count<<"\n";
-				
+      	}				
 				unpack_blob(w, ((data)-abslevels*2), bits, &raw_final[0], &pixels[4*abslevels*w]);
+				//unpack the newly read image rows to the processing buffer
 				std::swap_ranges(pixels.begin(),pixels.begin()+4*abslevels*w,store.begin());
+				//add the stored rows tot he top of the processing buffer
 				process(levels, w, (data), k, pixels, count);
+				//process 
 				
-				count++;
+				count++; // increment frame count
 				
 				pack_blob(w, data, bits, &pixels[2*w*abslevels], &raw_out[0]);
+				//repack the bottom data rows to the raw output buffer
 				write_blob(STDOUT_FILENO, cbRaw_out, &raw_out[0]);
+				//write raw buffer to stdout
 			}
 		}
 		

@@ -20,8 +20,8 @@ bin/process : src/main.cpp src/processes.cpp
 	clang++ $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert lenna.png -depth 2 gray:- | ./bin/original 512 512 2 -64 > output.raw
-	convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 -64 > output_process.raw
+	convert lenna.png -depth 2 gray:- | ./bin/original 512 512 2 4 > output.raw
+	convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 4 > output_process.raw
 	cmp --verbose output.raw output_process.raw
 
 	

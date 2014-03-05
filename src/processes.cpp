@@ -136,7 +136,6 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 //erode function with parallel for outer loop vmin OpenCL Kernels
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
 {
-	std::cerr<<"Reach Erode\n";
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	unsigned end = h + 2*levels;
@@ -227,7 +226,6 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector<uint32_t> &pixels, uint32_t count)
 {
 	std::vector<uint32_t> buffer(pixels.size());
-	std::cerr<<"Reached Process\n";
 	
 	// Depending on whether levels is positive or negative,
 	// we flip the order round.
