@@ -1,3 +1,6 @@
+//#define ORIGINAL //used for XCODE remove before pushing to master
+#ifndef ORIGINAL
+
 #include "processes.hpp"
 #include <unistd.h>
 #include <algorithm>
@@ -252,6 +255,8 @@ void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint3
 		pixels[i]=mask-pixels[i];
 	}
 }
+
+#endif
 
 
 

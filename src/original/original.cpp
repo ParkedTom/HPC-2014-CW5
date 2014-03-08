@@ -7,6 +7,8 @@
 #include <iostream>
 #include <string>
 
+#define XCODE
+
 ////////////////////////////////////////////
 // Routines for bringing in binary images
 
@@ -232,6 +234,11 @@ void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint3
 
 int main(int argc, char *argv[])
 {
+#ifdef XCODE
+    freopen("/dev/zero", "r", stdin);
+    freopen("/dev/null", "w", stdout);
+#endif
+    
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
@@ -292,4 +299,3 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 }
-

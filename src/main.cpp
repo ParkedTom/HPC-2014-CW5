@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 //remove before merging to master
-//#define XCODE
+#define XCODE
 
 #define DATA 256
 
@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
 {
 		//remove before merging to master
     #ifdef XCODE
-		freopen("input.raw", "r", stdin);
-    freopen("output.raw", "w", stdout);
-		#endif
+		freopen("/dev/zero", "r", stdin);
+    freopen("/dev/null", "w", stdout);
+	#endif
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
@@ -116,6 +116,9 @@ int main(int argc, char *argv[])
 				write_blob(STDOUT_FILENO, cbRaw_out, &raw_out[0]);
 				//write raw buffer to stdout
 			}
+            if(count==k){
+                break;
+            }
 		}
 		
 		return 0;
@@ -124,3 +127,5 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 }
+
+#endif
