@@ -91,8 +91,9 @@ bool read_blob(int fd, uint64_t cbBlob, void *pBlob)
 	uint64_t done=0;
 	while(done<cbBlob){
 		int todo=(int)std::min(uint64_t(1)<<30, cbBlob-done);		
-		
+		std::cerr<<"todo: "<<todo<<"\n";
 		int got=read(fd, pBytes+done, todo);
+		std::cerr<<"got: "<<got<<"\n";
 		if(got==0 && done==0)
 			return false;	// end of file
 		if(got<=0)
