@@ -1,5 +1,3 @@
-#ifndef ORIGINAL
-
 #include <unistd.h>
 #include <algorithm>
 #include <cassert>
@@ -42,4 +40,3 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector<uint32_t> &pixels, uint32_t count);
 
 void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint32_t> &pixels);
-#endif
