@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+#define MAX 255 //This is the max value a pixel can have, for up to 8 bits per pixel
 //#include "tbb/parallel_for.h"
 
 ////////////////////////////////////////////
@@ -151,6 +152,205 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
     } 
 }
 
+uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsigned y)
+{
+	int w = sqrt(square.size()); //This should always return an integer
+	uint32_t minimum = MAX;
+	auto tKernel = [&](int x, int y) -> uint32_t { return square[y*w+x]; };
+	auto subSet = [&](int x1, int y1, int x2, int y2) -> std::vector<uint32_t> 
+	{
+		std::vector<uint32_t> sub_kernel;
+		for(int i=x1; i<=x2; i++)
+		{
+		  for(int j=y1; j<=y2; j++)
+		  {
+			sub_kernel.push_back(tKernel(i,j));
+		  }
+		}
+		return sub_kernel;
+	}; 
+
+	if(levels == 1) { 
+	//Note that even if it includes pixels that aren't needed, pass a full 3x3 kernel
+		switch(x)
+		{ 
+		 case 0:switch(y)
+			{
+			 case 0: minimum = vmin(tKernel(0,0), tKernel(0,1), tKernel(1,0)); 
+				 break;
+			 case 1: minimum = vmin(tKernel(1,1), tKernel(0,0), tKernel(0,2), tKernel(1,1)); 	
+				 break;
+			 case 2: minimum = vmin(tKernel(0,2), tKernel(0,1), tKernel(1,2)); 
+				 break;
+			}
+			break;
+		 case 1:switch(y)
+			{
+			 case 0: minimum = vmin(tKernel(1,0), tKernel(1,1), tKernel(0,0), tKernel(2,0)); 
+				 break;
+			 case 1: minimum = vmin(tKernel(1,0), tKernel(0,1), tKernel(1,1), tKernel(2,1), tKernel(1,2));
+				 break;
+			 case 2: minimum = vmin(tKernel(1,2), tKernel(1,1), tKernel(1,2), tKernel(2,2) );
+				 break;
+			}
+			break;
+		 case 2:switch(y)
+			{
+			 case 0: minimum = vmin(tKernel(1,0), tKernel(2,0), tKernel(2,1));
+				 break;
+			 case 1: minimum = vmin(tKernel(1,1), tKernel(2,1), tKernel(2,0), tKernel(2,2));
+				 break;
+			 case 2: minimum = vmin(tKernel(2,2), tKernel(2,2), tKernel(2,1));
+				 break;
+			}
+			break;
+			
+		} //End switch(x)
+	}else if(levels == 2) { 
+		uint32_t min_minor = MAX;
+		std::vector<uint32_t> subKernel, subKernel2;
+		switch(x)
+		{
+		 case 0:switch(y) 
+			{
+			 case 0: subKernel = subSet(0,0, 2,2);
+				 minimum = vmin(kernel_min(subKernel, 1, 0, 0),
+						tKernel(0,2), tKernel(1,1), tKernel(2,0));				 
+				 break;
+			 case 1: subKernel = subSet(0, 0, 2, 2);
+				 minimum = vmin(kernel_min(subKernel, 1, 0, 1), tKernel(1,0), tKernel(1,2), 
+						tKernel(2,1), tKernel(0,3));
+				 break;
+			 case 2: subKernel = subSet(0,1, 2,3);
+				 min_minor = vmin(kernel_min(subKernel, 1, 0, 2), tKernel(1,1), tKernel(1,3), tKernel(2,2));
+				 minimum = vmin(min_minor, tKernel(0,0), tKernel(0,4));
+				 break;
+			 case 3: subKernel = subSet(0,2, 2,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 0,1),
+						tKernel(0,1), tKernel(1,2), tKernel(1,4), tKernel(2,3)); 
+ 				 break;
+			 case 4: subKernel = subSet(0,2, 2,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 0,2), tKernel(0,2), tKernel(1,3), tKernel(2,4));
+				 break;
+			}
+			break;
+		 case 1:
+			switch(y)
+			{
+			 case 0: subKernel = subSet(0,0, 2,2);
+				 minimum = vmin(kernel_min(subKernel, 1, 0,1), tKernel(3,0), tKernel(0,1), 
+						tKernel(2,1), tKernel(1,2));
+				 break;
+			 case 1: subKernel = subSet(0,0, 2,2);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,1), tKernel(0,0), tKernel(2,0),
+						  tKernel(0,2), tKernel(2,2));
+				 minimum = vmin(min_minor, tKernel(3,1), tKernel(1,3));
+				 break;
+			 case 2: subKernel = subSet(0,1, 2,3);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,1), tKernel(0,1), tKernel(2,1),
+						  tKernel(0,3), tKernel(2,3));
+				 minimum = vmin(min_minor, tKernel(3,2), tKernel(1, 4));
+				 break;
+			 case 3: subKernel = subSet(0,2, 2,4);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,1), tKernel(0,2), tKernel(2,2),
+						  tKernel(0,4), tKernel(2,4));
+				 minimum = vmin(min_minor, tKernel(1,1), tKernel(3,2));
+				 break;
+			 case 4: subKernel = subSet(0,2, 2,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,2), tKernel(0,3), tKernel(1,2), 
+						tKernel(2,3), tKernel(3,4));
+				 break;
+			}
+			break;
+		 case 2:
+			switch(y)
+			{
+			 case 0: subKernel = subSet(1,0, 3,2);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,0), tKernel(1,1), tKernel(3,1));
+				 minimum = vmin(min_minor, tKernel(0,0), tKernel(4,0), tKernel(2,2));
+				 break;
+			 case 1: subKernel = subSet(1,0, 3,2);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,1), tKernel(1,0), tKernel(3,0),
+						  tKernel(1,2), tKernel(3,2));
+				 minimum = vmin(min_minor, tKernel(0,1), tKernel(4,1), tKernel(2,3));
+				 break;
+			 case 2: subKernel = subSet(0,1, 2,3);
+				 subKernel2 = subSet(2,1, 4,3);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,1), kernel_min(subKernel, 1, 1,1));
+				 minimum = vmin(min_minor, tKernel(2,0), tKernel(2,1), tKernel(2,3), tKernel(2,4));
+				 break;
+			 case 3: subKernel = subSet(0,2, 2,4);
+				 subKernel2 = subSet(2,2, 4,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,1), kernel_min(subKernel2, 1, 1,1), 
+						tKernel(2,1), tKernel(2,2), tKernel(2,4));
+				 break;
+			 case 4: subKernel = subSet(0,2, 2,4);
+				 subKernel2 = subSet(2,2, 2,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,2), kernel_min(subKernel, 1, 1,2), 
+						tKernel(2,2), tKernel(2,3));
+				 break;
+
+			}
+			break;
+		 case 3:
+			switch(y)
+			{
+			 case 0: subKernel = subSet(2,0, 4,2);
+				 minimum = vmin(kernel_min(subKernel, 1, 1, 0), tKernel(1,0), tKernel(2,1), 
+						tKernel(4,1), tKernel(3,2));
+				 break;
+			 case 1: subKernel = subSet(1,0, 3,2);
+				 subKernel2 = subSet(2,0, 4,2);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,1), kernel_min(subKernel2, 1, 2,1),
+						tKernel(3,0), tKernel(3,2), tKernel(3,3)); 
+				 break;
+			 case 2: subKernel = subSet(1,1, 3,3);
+				 subKernel2 = subSet(2,1, 4,3);
+				 min_minor = vmin(kernel_min(subKernel, 1, 1,1), kernel_min(subKernel, 1, 2,1)); 
+				 minimum = vmin(min_minor, tKernel(3,0), tKernel(3,1), tKernel(3,3), tKernel(3,4));
+				 break;
+			 case 3: subKernel = subSet(1,2, 3,4);
+				 subKernel2 = subSet(2,2, 4,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,1), kernel_min(subKernel2, 1, 2,1), 
+				 		  tKernel(3,1), tKernel(3,2), tKernel(3,4));
+				 break;
+			 case 4: subKernel = subSet(1,2, 3,4);
+				 subKernel2 = subSet(2,2, 4,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,2), kernel_min(subKernel2, 1, 2,2),
+						tKernel(3,2), tKernel(3,3));
+				 break; 
+			}
+			break;
+		 case 4:
+			switch(y)
+			{
+			 case 0: subKernel = subSet(2,0, 4,2);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,0), tKernel(4,1), tKernel(4,2));
+				 break;
+			 case 1: subKernel = subSet(2,0, 4,2);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,1), tKernel(4,0), tKernel(4,2), tKernel(4,3));
+				 break;
+			 case 2: subKernel = subSet(2,1, 4,3);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,1), tKernel(4,0), tKernel(4,1),
+						tKernel(4,3), tKernel(4,4));
+				 break;
+			 case 3: subKernel = subSet(2,2, 4,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,1), tKernel(4,1), tKernel(4,2), tKernel(4,4));
+				 break;
+			 case 4: subKernel = subSet(2,2, 4,4);
+				 minimum = vmin(kernel_min(subKernel, 1, 1,2), tKernel(4,2), tKernel(4,3));
+				 break;
+			}
+			break;
+		} // End switch(x)
+
+	}else{
+		std::cerr<<"Cannot deal with more than 2 levels";
+	}
+
+	return minimum;
+}
+
 //erode function with parallel for outer loop vmin OpenCL Kernels
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
 {
@@ -177,15 +377,18 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 			}
 			out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
 		} else if (y <= (end-levels)){
-			
+		//pixels on the middle rows. 	
 			out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 			for(unsigned x=1; x<w-1; x++)
 			{
+				//Arrange kernel to deal with corner cases + come up with a neat way of returning the values. 
+				/*std::vector<uint32_t> img_kernel{in(x-1,y-1), in(x,y-1), in(x+1, y-1), in(x-1,y), in(x, y), in(x+1, y), in(x-1,y+1), in(x, y+1), in(x+1, y+1)};
+				out(x,y) = kernel_min(img_kernel);*/
 				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
 			}
 			out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
-		}			
-	}
+		} //end if			
+	} // end for
 }
 
 uint32_t vmax(uint32_t a, uint32_t b)
@@ -203,7 +406,7 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
-	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
+	auto out=[&](int x, int y) -> uint32_t & { return output[y*w+x]; };
 	unsigned end = h + 2*levels;
 	
 	for(unsigned y=0; y<end; y++)
@@ -233,7 +436,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 			}
 			out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 		}			
-	}//end
+	}//end for
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -268,6 +471,5 @@ void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint3
 		pixels[i]=mask-pixels[i];
 	}
 }
-
 
 

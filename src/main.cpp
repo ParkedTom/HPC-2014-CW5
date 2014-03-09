@@ -12,11 +12,6 @@
 
 int main(int argc, char *argv[])
 {
-		//remove before merging to master
-    #ifdef XCODE
-		freopen("input.raw", "r", stdin);
-    freopen("output.raw", "w", stdout);
-		#endif
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
