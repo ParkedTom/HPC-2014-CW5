@@ -7,16 +7,9 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
-//remove before merging to master
-//#define XCODE
 
 int main(int argc, char *argv[])
 {
-		//remove before merging to master
-    #ifdef XCODE
-	freopen("input.raw", "r", stdin);
-    freopen("output.raw", "w", stdout);
-	#endif
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
@@ -27,14 +20,12 @@ int main(int argc, char *argv[])
 		
 		unsigned w=atoi(argv[1]);
 		unsigned h=atoi(argv[2]);
-		std::cerr<<"w: "<<w<<"\n";
-		std::cerr<<"h: "<<h<<"\n";
 		
 		unsigned bits=8;
 		if(argc>3){
 			bits=atoi(argv[3]);
 		}
-		std::cerr<<"bits: "<<bits<<"\n";
+
 		if(bits>32)
 			throw std::invalid_argument("Bits must be <= 32.");
 		
@@ -59,21 +50,19 @@ int main(int argc, char *argv[])
 			abslevels = vmin(h/4,w/4,64);
 			
 		}
-		std::cerr<<"levels: "<<levels<<"\n";
-		std::cerr<<"abslevels: "<<abslevels<<"\n";
 		unsigned k = 2;
-		while(((h/k)*w*bits)/8 > 1000000)
+        uint64_t frameSize =uint64_t(h/k)*uint64_t(w)*uint64_t(bits)/8;
+        
+        while(frameSize > 1000000)
 		{
 			if((h/(2*k)) < 1+2*abslevels)
 			{
 				break;
 			}
 			k *= 2;
+			frameSize =uint64_t(h/k)*uint64_t(w)*uint64_t(bits)/8;
 		}
 		unsigned data = h/k;
-		std::cerr<<"data: "<<data<<"\n";
-		
-		std::cerr<<"k: "<<k<<"\n";
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
 		
@@ -83,17 +72,12 @@ int main(int argc, char *argv[])
         uint64_t cbRaw_final=uint64_t(w)*(data + 2*abslevels)*bits/8;
 		uint64_t cbRaw_init=uint64_t(w)*(data - 2*abslevels)*bits/8;
 		
-		
-		std::cerr<<"cbRaw_out: "<<cbRaw_out<<"\n";
 		uint32_t count = 0;
 		std::vector<uint64_t> raw_final(cbRaw_final/8);
 		
 		uint64_t cbPixels = uint64_t(w)*(data + 4*abslevels);
 		uint64_t cbStore = uint64_t(w)*4*abslevels;
-		uint64_t cbRaw_in=uint64_t(w)*data*bits/8;
-		std::cerr<<"cbRaw_in: "<<cbRaw_in<<"\n";
-		std::cerr<<"cbPixels: "<<cbPixels<<"\n";
-		std::cerr<<"cbStore: "<<cbStore<<"\n";
+		uint64_t cbRaw_in=uint64_t(w)*data*bits/8; 
 				
 		std::vector<uint64_t> raw_in(cbRaw_in/8);
 		std::vector<uint64_t> raw_init(cbRaw_init/8);
@@ -102,7 +86,6 @@ int main(int argc, char *argv[])
 		std::vector<uint32_t> pixels(cbPixels);
 		std::vector<uint32_t> store(cbStore);
 		
-		uint64_t TopGot = 0;
 		uint64_t store_p;
 		
 		while(1){
@@ -112,9 +95,6 @@ int main(int argc, char *argv[])
       			{		
       				break;	// No more images   
       			}
-				std::cerr<<"Read Frame: "<<count<<"\n\n";
-				TopGot += cbRaw_in;
-				std::cerr<<"Total Read: "<<TopGot<<"\n\n";
 				unpack_blob(w, data, bits, &raw_in[0], &pixels[0]);
 				
 				//store bottom rows of pixels
@@ -138,9 +118,7 @@ int main(int argc, char *argv[])
       			{
       				break;	// No more images   
       			}
-				std::cerr<<"Read Frame: "<<count<<"\n\n";
-				TopGot += cbRaw_in;
-				std::cerr<<"Total Read: "<<TopGot<<"\n\n";
+		
                 
                 
 				std::copy(store.begin(), store.begin()+store_p, pixels.begin());
@@ -161,9 +139,6 @@ int main(int argc, char *argv[])
       			{
       				break;	// No more images   
       			}
-				std::cerr<<"Read Frame: "<<count<<"\n\n";
-				TopGot += cbRaw_in;
-				std::cerr<<"Total Read: "<<TopGot<<"\n\n";
 				
 				std::copy(store.begin(), store.begin()+store_p,pixels.begin());
 				unpack_blob(w, data, bits, &raw_in[0], &pixels[store_p]);

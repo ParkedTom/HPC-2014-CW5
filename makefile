@@ -20,8 +20,8 @@ bin/process : src/main.cpp src/processes.cpp
 	clang++ $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert lenna.png -resize 32768x32768 -depth 8 gray:- | ./bin/original 32768 32768 8 -1 > output.raw
-	convert lenna.png -resize 32768x32768 -depth 8 gray:- | ./bin/process  32768 32768 8 -1 > output_process.raw
+	convert lenna.png -resize 2048x2048 -depth 32 gray:- | ./bin/original 2048 2048 32 -1 > output.raw
+	convert lenna.png -resize 2048x2048 -depth 32 gray:- | ./bin/process  2048 2048 32 -1 > output_process.raw
 	cmp --verbose output.raw output_process.raw
 	
 all : bin/process bin/original
