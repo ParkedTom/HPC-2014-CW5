@@ -91,9 +91,7 @@ bool read_blob(int fd, uint64_t cbBlob, void *pBlob)
 	uint64_t done=0;
 	while(done<cbBlob){
 		int todo=(int)std::min(uint64_t(1)<<30, cbBlob-done);		
-		std::cerr<<"todo: "<<todo<<"\n";
 		int got=read(fd, pBytes+done, todo);
-		std::cerr<<"got: "<<got<<"\n";
 		if(got==0 && done==0)
 			return false;	// end of file
 		if(got<=0)
@@ -138,10 +136,9 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
-	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
-	unsigned end = h + 2*levels;
+	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };;
 
-	for(unsigned y=0; y<end; y++)
+	for(unsigned y=0; y<h; y++)
 	{
 		if(y==0){ //First line should only be _processed_ for the first block
 			if(count == 0){
@@ -152,14 +149,14 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 			} //else do nothing
-		} else if((y >= (end-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+		} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
 			out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
 			for(unsigned x=1;x<w-1; x++)
 			{
 				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
 			}
 			out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
-		} else if (y < (end-1)){
+		} else if (y < (h-1)){
 			
 			out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 			for(unsigned x=1; x<w-1; x++)
@@ -187,9 +184,8 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
-	unsigned end = h + 2*levels;
 	
-	for(unsigned y=0; y<end; y++)
+	for(unsigned y=0; y<h; y++)
 	{
 		if(y==0){ //First lines should only be _processed_ for the first block
 			if(count == 0)
@@ -201,14 +197,14 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				}
 				out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
 			}//else do nothing
-		} else if((y >= (end - 1) && count==(no_frames-1))){ //Last line should only be _processed_ for final block - otherwise only read.
+		} else if((y >= (h - 1) && count==(no_frames-1))){ //Last line should only be _processed_ for final block - otherwise only read.
 			out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
 			for(unsigned x=1;x<w-1; x++)
 			{
 				out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
 			}
 			out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
-		} else if(y < (end-1)){
+		} else if(y < (h-1)){
 			if(count==0 || (count!=0 && y>=levels)){
 				out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 				for(unsigned x=1; x<w-1; x++)
