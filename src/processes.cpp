@@ -178,7 +178,7 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 			{
 			 case 0: minimum = vmin(tKernel(0,0), tKernel(0,1), tKernel(1,0)); 
 				 break;
-			 case 1: minimum = vmin(tKernel(1,1), tKernel(0,0), tKernel(0,2), tKernel(1,1)); 	
+			 case 1: minimum = vmin(tKernel(0,1), tKernel(0,0), tKernel(0,2), tKernel(1,1)); 	
 				 break;
 			 case 2: minimum = vmin(tKernel(0,2), tKernel(0,1), tKernel(1,2)); 
 				 break;
@@ -222,7 +222,7 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 						tKernel(2,1), tKernel(0,3));
 				 break;
 			 case 2: subKernel = subSet(0,1, 2,3);
-				 min_minor = vmin(kernel_min(subKernel, 1, 0, 2), tKernel(1,1), tKernel(1,3), tKernel(2,2));
+				 min_minor = vmin(kernel_min(subKernel, 1, 0, 1), tKernel(1,1), tKernel(1,3), tKernel(2,2));
 				 minimum = vmin(min_minor, tKernel(0,0), tKernel(0,4));
 				 break;
 			 case 3: subKernel = subSet(0,2, 2,4);
@@ -238,7 +238,7 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 			switch(y)
 			{
 			 case 0: subKernel = subSet(0,0, 2,2);
-				 minimum = vmin(kernel_min(subKernel, 1, 0,1), tKernel(3,0), tKernel(0,1), 
+				 minimum = vmin(kernel_min(subKernel, 1, 1,0), tKernel(3,0), tKernel(0,1), 
 						tKernel(2,1), tKernel(1,2));
 				 break;
 			 case 1: subKernel = subSet(0,0, 2,2);
@@ -314,14 +314,14 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 				 minimum = vmin(kernel_min(subKernel, 1, 1,1), kernel_min(subKernel2, 1, 2,1), 
 				 		  tKernel(3,1), tKernel(3,2), tKernel(3,4));
 				 break;
-			 case 4: subKernel = subSet(1,2, 3,4);
+			 case 4: subKernel = subSet(1,2, 3,4); //Think this one looks at the wrong indecies
 				 subKernel2 = subSet(2,2, 4,4);
 				 minimum = vmin(kernel_min(subKernel, 1, 1,2), kernel_min(subKernel2, 1, 2,2),
 						tKernel(3,2), tKernel(3,3));
 				 break; 
 			}
 			break;
-		 case 4:
+		 case 4: //Review here
 			switch(y)
 			{
 			 case 0: subKernel = subSet(2,0, 4,2);
@@ -383,7 +383,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 
 	} ;
  	std::vector<uint32_t> img_ker;	
-	for(unsigned y=0; y<end; y++)
+	for(unsigned y=0; y<h; y++)
 	{
 		if(y<levels){
 			if (y==0){ //Only look at first row if first block
@@ -396,12 +396,12 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 			}else{
 			  for(int x=0; x<w; x++)
 			  {
-			    img_ker = img_k(x,y);
+			    img_ker = img_k(x,0);
 			    out(x,y) = kernel_min(img_ker, levels, x%(2*levels+1) ,y); 
 			   }
 			 }
 		 }else if(y<h){
-			if(y<h-levels){
+			if(y<(h-levels)){
 			   for(int x=0; x<w; x++)
 			   {
 				img_ker = img_k(x, y-levels);
@@ -735,12 +735,13 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 	unsigned abslevels = std::abs(levels);
 	unsigned loop_bound = floor(abslevels/2);
 	for(int i=0;i<loop_bound;i++){
-		fwd(w, h, pixels, buffer, count, 2);
+		fwd(w, h, pixels, buffer, count, 2, no_frames);
 		std::swap(pixels, buffer);
 	}
-	if(abslevels%2 == 1) { fwd(w,h, pixels, buffer, count, 1); std::swap(pixels, buffer); }
+	if(abslevels%2 == 1) { fwd(w,h, pixels, buffer, count, 1, no_frames); std::swap(pixels, buffer); }
 	for(int i=0;i<loop_bound;i++){
-		rev(w,h,pixels, buffer, count, 2);
+		rev(w,h,pixels, buffer, count, 2, no_frames);
+	}
 /*	
 	for(int i=0;i<abslevels;i++){
 		fwd(w, h, pixels, buffer, count, abslevels, no_frames);
@@ -750,7 +751,7 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 		rev(w,h,pixels, buffer, count, abslevels, no_frames);
 		std::swap(pixels, buffer);
 	}*/
-	if(abslevels%2 == 1) {rev(w,h,pixels,buffer,count,1); std::swap(pixels,buffer);}
+	if(abslevels%2 == 1) {rev(w,h,pixels,buffer,count,1, no_frames); std::swap(pixels,buffer);}
 }
 
 // You may want to play with this to check you understand what is going on
