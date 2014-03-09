@@ -352,11 +352,10 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 }
 
 //erode function with parallel for outer loop vmin OpenCL Kernels
-void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
+void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
-	unsigned end = h + 2*levels;
 
 	auto subSet = [&](int x1, int y1, int x2, int y2) -> std::vector<uint32_t> 
 	{
@@ -401,16 +400,16 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 			    out(x,y) = kernel_min(img_ker, levels, x%(2*levels+1) ,y); 
 			   }
 			 }
-		 }else if(y<end){
-			if(y<end-levels){
+		 }else if(y<h){
+			if(y<h-levels){
 			   for(int x=0; x<w; x++)
 			   {
 				img_ker = img_k(x, y-levels);
 				out(x,y) = kernel_min(img_ker, levels, x%(2*levels+1),y%(2*levels+1));
 			   }
 			}else{
-			   if(y==end-1){
-			      if(count == LAST){
+			   if(y==h-1){
+			      if(count == no_frames){
 				for(int x=0; x<w; x++)
 			      	{
 				 img_ker = img_k(x,(y-2*levels));
@@ -643,8 +642,7 @@ uint32_t kernel_max(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 	return maximum;
 }
 
-
-void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels)
+void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & { return output[y*w+x]; };
@@ -702,7 +700,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 			   }
 			}else{
 			   if(y==end-1){
-			      if(count == LAST){
+			      if(count == no_frames){
 				for(int x=0; x<w; x++)
 			      	{
 				 img_ker = img_k(x,(y-2*levels));
@@ -726,7 +724,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 ///////////////////////////////////////////////////////////////////
 // Composite image processing
 
-void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<uint32_t> &pixels, uint32_t count)
+void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector<uint32_t> &pixels, uint32_t count)
 {
 	std::vector<uint32_t> buffer(pixels.size());
 	
@@ -743,8 +741,15 @@ void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<
 	if(abslevels%2 == 1) { fwd(w,h, pixels, buffer, count, 1); std::swap(pixels, buffer); }
 	for(int i=0;i<loop_bound;i++){
 		rev(w,h,pixels, buffer, count, 2);
+/*	
+	for(int i=0;i<abslevels;i++){
+		fwd(w, h, pixels, buffer, count, abslevels, no_frames);
 		std::swap(pixels, buffer);
 	}
+	for(int i=0;i<std::abs(levels);i++){
+		rev(w,h,pixels, buffer, count, abslevels, no_frames);
+		std::swap(pixels, buffer);
+	}*/
 	if(abslevels%2 == 1) {rev(w,h,pixels,buffer,count,1); std::swap(pixels,buffer);}
 }
 
