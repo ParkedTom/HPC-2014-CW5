@@ -358,37 +358,94 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	unsigned end = h + 2*levels;
 
+	auto subSet = [&](int x1, int y1, int x2, int y2) -> std::vector<uint32_t> 
+	{
+		std::vector<uint32_t> sub_kernel;
+		for(int i=x1; i<=x2; i++)
+		{
+		  for(int j=y1; j<=y2; j++)
+		  {
+			sub_kernel.push_back(in(i,j));
+		  }
+		}
+		return sub_kernel;
+	}; 
+	std::vector<uint32_t> img_kernel;
 	for(unsigned y=0; y<end; y++)
 	{
-		if(y==0){ //First line should only be _processed_ for the first block
-			if(count == 0){
-				out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
-				for(unsigned x=1;x<w-1;x++)
-				{
-					out(x,0)=vmin(in(x,0), in(x-1,0), in(x+1,0), in(x,1));
-				}
-				out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
-			} //else do nothing
-		} else if(y==end-1 && count==LAST){ //Last line should only be _processed_ for final block - otherwise only read.
-			out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
-			for(unsigned x=1;x<w-1; x++)
-			{
-				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
+
+		if(y<levels){
+			if (y==0 && count == 0){ //Only look at first row if first block
+			 for(int x=0; x<w; x++){
+			   if(x-levels<0)
+				img_kernel = subSet(0,y, 2*levels, (y+2*levels));
+			   else	if(x+levels>0) 
+				img_kernel = subSet((w-1-2*levels), y, w-1, (y+2*levels));
+			   else						
+				img_kernel = subSet(x-levels,y, x+levels,(y+2*levels));
+
+				out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y); 
+			  }
+			}else{
+			  for(int x=0; x<w; x++)
+			  {
+			    if(x-levels<0)
+				img_kernel = subSet(0,0, 2*levels, (2*levels));
+			    else if(x+levels>0) 
+				img_kernel = subSet((w-1-2*levels), 0, w-1, (2*levels));
+			    else						
+				img_kernel = subSet(x-levels,0, x+levels,(0+2*levels));
+
+			    out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y); 
+			   }
+			 }
+		 }else if(y<end){
+			if(y<end-levels){
+			   for(int x=0; x<w; x++)
+			   {
+			    if(x-levels<0)
+				img_kernel = subSet(0,(y-levels), 2*levels, (y+levels));
+			    else if(x+levels>0) 
+				img_kernel = subSet((w-1-2*levels), (y-levels), w-1, (y+levels));
+			    else						
+				img_kernel = subSet(x-levels, (y-levels), x+levels,(y+levels));
+
+			    out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y%(2*levels+1));
+			   }
+			}else{
+			   if(y==end-1){
+			      if(count == LAST){
+				for(int x=0; x<w; x++)
+			      	{
+			      	 if(x-levels<0)
+			 		img_kernel = subSet(0,(end-1-2*levels), 2*levels, (end-1));
+			      	 else if(x+levels>0) 
+					img_kernel = subSet((w-1-2*levels), (end-1-2*levels), w-1, (end-1));
+			      	 else						
+					img_kernel = subSet(x-levels, (end-1-2*levels), x+levels,(end-1));
+
+			      	 out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y%(2*levels+1));
+			      	}
+			      } //else do nothing
+			   }else{
+				for(int x=0; x<w; x++)
+			      	{
+			      	 if(x-levels<0)
+			 		img_kernel = subSet(0,(end-1-2*levels), 2*levels, (end-1));
+			      	 else if(x+levels>0) 
+					img_kernel = subSet((w-1-2*levels), (end-1-2*levels), w-1, (end-1));
+			      	 else						
+					img_kernel = subSet(x-levels, (end-1-2*levels), x+levels,(end-1));
+
+			      	 out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y%(2*levels+1));
+			      	}
+
+			   }
 			}
-			out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
-		} else if (y <= (end-levels)){
-		//pixels on the middle rows. 	
-			out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
-			for(unsigned x=1; x<w-1; x++)
-			{
-				//Arrange kernel to deal with corner cases + come up with a neat way of returning the values. 
-				/*std::vector<uint32_t> img_kernel{in(x-1,y-1), in(x,y-1), in(x+1, y-1), in(x-1,y), in(x, y), in(x+1, y), in(x-1,y+1), in(x, y+1), in(x+1, y+1)};
-				out(x,y) = kernel_min(img_kernel);*/
-				out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
-			}
-			out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
-		} //end if			
-	} // end for
+		  }
+
+	} //End for
+
 }
 
 uint32_t vmax(uint32_t a, uint32_t b)
