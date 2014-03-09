@@ -190,7 +190,7 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 				 break;
 			 case 1: minimum = vmin(tKernel(1,0), tKernel(0,1), tKernel(1,1), tKernel(2,1), tKernel(1,2));
 				 break;
-			 case 2: minimum = vmin(tKernel(1,2), tKernel(1,1), tKernel(1,2), tKernel(2,2) );
+			 case 2: minimum = vmin(tKernel(1,2), tKernel(1,1), tKernel(0,2), tKernel(2,2) );
 				 break;
 			}
 			break;
@@ -200,7 +200,7 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 				 break;
 			 case 1: minimum = vmin(tKernel(1,1), tKernel(2,1), tKernel(2,0), tKernel(2,2));
 				 break;
-			 case 2: minimum = vmin(tKernel(2,2), tKernel(2,2), tKernel(2,1));
+			 case 2: minimum = vmin(tKernel(2,2), tKernel(1,2), tKernel(2,1));
 				 break;
 			}
 			break;
@@ -375,17 +375,19 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 	{
 
 		if(y<levels){
-			if (y==0 && count == 0){ //Only look at first row if first block
-			 for(int x=0; x<w; x++){
-			   if(x-levels<0)
+			if (y==0){ //Only look at first row if first block
+			 if(count==0){
+			   for(int x=0; x<w; x++){
+			     if(x-levels<0)
 				img_kernel = subSet(0,y, 2*levels, (y+2*levels));
-			   else	if(x+levels>0) 
+			     else	if(x+levels>0) 
 				img_kernel = subSet((w-1-2*levels), y, w-1, (y+2*levels));
-			   else						
+			     else						
 				img_kernel = subSet(x-levels,y, x+levels,(y+2*levels));
 
 				out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y); 
 			  }
+			} // else do nothing
 			}else{
 			  for(int x=0; x<w; x++)
 			  {
