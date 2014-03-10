@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
 		unsigned k = 2;
         uint64_t frameSize =uint64_t(h/k)*uint64_t(w)*uint64_t(bits)/8; //measure frame size for k = 2
         
-        while(frameSize > 1000000) 	//if frame > 1MB then double the number of frames per image until each frame
-		{							//is less than 1MB
+        while(frameSize > 10000) 	//if frame > 10kB then double the number of frames per image until each frame
+		{							//is less than 10kB
 			if((h/(2*k)) < 1+2*abslevels)
 			{
 				break;
@@ -62,6 +62,22 @@ int main(int argc, char *argv[])
 			k *= 2;
 			frameSize =uint64_t(h/k)*uint64_t(w)*uint64_t(bits)/8;
 		}
+        while (h%k != 0) {
+            k += 1;
+            if((h/(k)) < 1+2*abslevels)
+			{
+				break;
+			}
+            
+        }
+        if((h/(k)) < 1+2*abslevels)
+        {
+            while (h%k != 0)
+            {
+                k -= 0;
+            }
+        }
+        
 		unsigned data = h/k; // each frame is h/k rows each
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
