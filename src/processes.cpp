@@ -184,7 +184,8 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 				 break;
 			}
 			break;
-		 case 1:switch(y)
+		 case 1:
+			switch(y)
 			{
 			 case 0: minimum = vmin(tKernel(1,0), tKernel(1,1), tKernel(0,0), tKernel(2,0)); 
 				 break;
@@ -321,7 +322,7 @@ uint32_t kernel_min(std::vector<uint32_t> &square, int levels, unsigned x, unsig
 				 break; 
 			}
 			break;
-		 case 4: //Review here
+		 case 4: 
 			switch(y)
 			{
 			 case 0: subKernel = subSet(2,0, 4,2);
@@ -386,20 +387,15 @@ std::vector<uint32_t> img_kernel;
 	{
 		if(y<levels){
 			if (y==0){ //Only look at first row if first block
-				std::cerr<<"Checking y==0 \n";
 				if(count==0){
 				   for(int x=0; x<w; x++){
-					std::cerr<<"Entering first x loop\n";
 					 if(x<levels){
-						std::cerr<<"Entering first if clause\n";
 						img_kernel = subSet(0,y, 2*levels, (y+2*levels));
 						out(x,y) = kernel_min(img_kernel, levels, x, y);
 					 }else	if((x+levels)>(w-1)){
-						std::cerr<<"Entering second if clause\n";
 						img_kernel = subSet((w-1-2*levels), y, w-1, (y+2*levels));
 						out(x,y) = kernel_min(img_kernel, levels, (2*levels)-((w-1)-x), y);
 					 }else{
-						std::cerr<<"Entering third if clause\n";
 						img_kernel = subSet(x-levels,y, x+levels,(y+2*levels));
 						out(x,y) = kernel_min(img_kernel, levels, levels/*x-coord*/ ,y);
 					}
@@ -442,27 +438,31 @@ std::vector<uint32_t> img_kernel;
 			      if(count == no_frames){
 					for(int x=0; x<w; x++)
 						{
-						 if(x>levels)
-						img_kernel = subSet(0,(h-1-2*levels), 2*levels, (h-1));
-						 else if(x+levels>(w-1)) 
-						img_kernel = subSet((w-1-2*levels), (h-1-2*levels), w-1, (h-1));
-						 else						
-						img_kernel = subSet(x-levels, (h-1-2*levels), x+levels,(h-1));
-
-						 out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y%(2*levels+1));
+						 if(x>levels){
+							img_kernel = subSet(0,(h-1-2*levels), 2*levels, (h-1));
+							out(x,y) = kernel_min(img_kernel, levels, x, 2*levels);
+						 }else if(x+levels>(w-1)){ 
+							img_kernel = subSet((w-1-2*levels), (h-1-2*levels), w-1, (h-1));
+							out(x,y) = kernel_min(img_kernel, levels, (2*levels)-((w-1)-x), 2*levels);
+						 }else{						
+							img_kernel = subSet(x-levels, (h-1-2*levels), x+levels,(h-1));
+							out(x,y) = kernel_min(img_kernel, levels, levels, 2*levels);
+						 }
 						}
 			      } //else do nothing
 			   }else{
 				for(int x=0; x<w; x++)
 			      	{
-			      	 if(x<levels)
+			      	 if(x<levels){
 			 		img_kernel = subSet(0,(h-1-2*levels), 2*levels, (h-1));
-			      	 else if(x+levels>(w-1)) 
+					out(x,y) = kernel_min(img_kernel, levels, x, 2*levels);
+			      	 }else if(x+levels>(w-1)){
 					img_kernel = subSet((w-1-2*levels), (h-1-2*levels), w-1, (h-1));
-			      	 else						
+					out(x,y) = kernel_min(img_kernel, levels, (2*levels)-((w-1)-x), 2*levels);
+			      	 }else{						
 					img_kernel = subSet(x-levels, (h-1-2*levels), x+levels,(h-1));
-
-			      	 out(x,y) = kernel_min(img_kernel, levels, x%(2*levels+1) ,y%(2*levels+1));
+					out(x,y) = kernel_min(img_kernel, levels, levels, 2*levels);
+				  }
 			      	}
 
 			   }
