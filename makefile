@@ -1,4 +1,4 @@
-CPPFLAGS = -std=c++11 -Wall -stdlib=libstdc++ -I include
+CPPFLAGS = -std=c++11 -Wall -I include -g
 LDFLAGS = 
 LDLIBS = -lm -ltbb
 CPPFLAGS += -O2
@@ -14,14 +14,14 @@ CPPFLAGS += -I $(TBB_INC_DIR)
 LDFLAGS += -L $(TBB_LIB_DIR)
 
 bin/original : src/original/original.cpp
-	clang++ $(CPPFLAGS) $^ -o $@ 
+	$(CXX) $(CPPFLAGS) $^ -o $@ 
 	
 bin/process : src/main.cpp src/processes.cpp
-	clang++ $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CXX) $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert lenna.png -resize 2048x2048 -depth 32 gray:- | ./bin/original 2048 2048 32 -1 > output.raw
-	convert lenna.png -resize 2048x2048 -depth 32 gray:- | ./bin/process  2048 2048 32 -1 > output_process.raw
+	convert lenna.png  -depth 32 gray:- | ./bin/original 512 512 32 -1 > output.raw
+	convert lenna.png  -depth 32 gray:- | ./bin/process  512 512 32 -1 > output_process.raw
 	cmp --verbose output.raw output_process.raw
 	
 all : bin/process bin/original
