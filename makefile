@@ -20,10 +20,9 @@ bin/process : src/main.cpp src/processes.cpp
 	$(CXX) $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ 
 
 test : bin/original bin/process
-	convert lenna.png -depth 2 gray:- | ./bin/original 512 512 2 1 > output.raw
-	convert lenna.png -depth 2 gray:- | ./bin/process 512 512 2 1 > output_process.raw
+	convert lenna.png -resize 2048x2048 -depth 32 gray:- | ./bin/original 2048 2048 32 -1 > output.raw
+	convert lenna.png -resize 2048x2048 -depth 32 gray:- | ./bin/process  2048 2048 32 -1 > output_process.raw
 	cmp --verbose output.raw output_process.raw
-
 	
 all : bin/process bin/original
 	
