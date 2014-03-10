@@ -136,28 +136,25 @@ int main(int argc, char *argv[])
       			{
       				break;	// No more images   
       			}
-		
 				std::copy(store.begin(), store.begin()+store_p, pixels.begin()); //put the stored rows at the top 
 				//of the processing frame
-				
 				unpack_blob(w, data, bits, &raw_in[0], &pixels[store_p]);
 				//write the new frame below the rows from the previous frame
-
 				process(levels, w, data + 4*abslevels, k, pixels, count);
 				//process 
-				
 				count++; // increment frame count
 				
 				pack_blob(w, data + 2*abslevels, bits, &pixels[2*w*abslevels], &raw_final[0]);
 				//repack the bottom data rows to the raw output buffer
+                std::cerr<<"Successfully packed frame "<<count<<"\n";
 				write_blob(STDOUT_FILENO, cbRaw_final, &raw_final[0]);
+                std::cerr<<"Successfully wrote frame "<<count<<"\n";
 				//write raw buffer to stdout
 			}else{
 				if(!read_blob(STDIN_FILENO, cbRaw_in, &raw_in[0]))
       			{
       				break;	// No more images   
       			}
-				
 				std::copy(store.begin(), store.begin()+store_p,pixels.begin());//put the stored rows at the top 
 				//of the processing frame
 				
@@ -184,7 +181,7 @@ int main(int argc, char *argv[])
 				//write raw buffer to stdout
 			}
 		}
-		
+        std::cerr<<"End program happy days \n";		
 		return 0;
 	}catch(std::exception &e){
 		std::cerr<<"Caught exception : "<<e.what()<<"\n";
