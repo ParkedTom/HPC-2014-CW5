@@ -1,6 +1,6 @@
 Improvement Approach
 ==============================================================================
-Keeping in mind that the pixel latency was going to be the evaluation metric the first approach was to divide up the read and write into blocks, rather than processing the whole image in one go. Alongside this, it was attempted to process multiple levels per iteration by extending the kernel reviewed. Following this, parallelism effects were explored.
+Keeping in mind that the pixel latency was going to be the evaluation metric the first approach was to divide up the read and write into blocks, rather than processing the whole image in one go. Alongside this, it was attempted to process multiple levels per iteration by extending the kernel reviewed (something which caused more bugs than was considered worthwhile debugging). Following this, parallelism effects were explored.
 
 OpenCL was considered at the beginning but as a later stage, however as early improvements took longer than expected it was excluded.
 
@@ -10,8 +10,8 @@ Testing Methodology
 In order to test that the program at all ran, a stream of 0s generated from /dev/null were used. If that completed, three images were used for variation. They were:
 	- Lenna, 512x512 http://imgur.com/Rtj0qh3
 	- Stars, 1632x1170 http://imgur.com/sVzF7JM
-	- Modern art style masterpiece from paint 8192x8192 http://imgur.com/2u8vZAx
-For all three cases, the number of levels and bits as they passed. Most of the time, varying the number of bits in working cases didn't show any bugs, however different levels would regularly bring up buggy behaviour, especially for large images. 
+	- Modern art style masterpiece from paint (by Tom) 8192x8192 http://imgur.com/2u8vZAx
+For all three cases, the number of levels and bits as they passed. Both Lenna and the Modern art work for varying levels and bits, whereas stars shows some bugs for certain cases (e.g. it will produce a correct output for open but not for close). 
 
 
 
