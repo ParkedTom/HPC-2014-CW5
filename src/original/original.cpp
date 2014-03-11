@@ -131,7 +131,6 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
 
-
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
@@ -216,10 +215,10 @@ void process(int levels, unsigned w, unsigned h, unsigned /*bits*/, std::vector<
 		fwd(w, h, pixels, buffer);
 		std::swap(pixels, buffer);
 	}
-	for(int i=0;i<std::abs(levels);i++){
+/*	for(int i=0;i<std::abs(levels);i++){
 		rev(w,h,pixels, buffer);
 		std::swap(pixels, buffer);
-	}
+	}*/
 }
 
 // You may want to play with this to check you understand what is going on
