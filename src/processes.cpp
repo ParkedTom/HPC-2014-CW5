@@ -178,7 +178,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 					}
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
-			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+			} else if(y >= (h-1)){ //Last lines should only be _processed_ for final block - otherwise only read.
 				std::cerr<<"enter second if erode"<<std::endl;
 				out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
@@ -195,13 +195,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 				std::cerr<<"leave third if erode"<<"  "<<" "<<y<<std::endl;
-			}	else if((y==h-1) && (count!=(no_frames-1))){
-				std::cerr<<"enter fourth if erode"<<"  "<<" "<<y<<std::endl;
-				for(unsigned x=0; x<w; x++)
-				{
-					out(x,y)=in(x,y);
-				}
-			}
+			}	
 			std::cerr<<"leave for erode"<<"  "<<" "<<y<<std::endl;	
 		}
 	}else{
@@ -322,7 +316,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 					}
 					out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
-			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+			} else if(y >= (h-1)){ //Last lines should only be _processed_ for final block - otherwise only read.
 				std::cerr<<"enter second if dilate"<<std::endl;
 				out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
@@ -422,11 +416,11 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 		std::swap(pixels, buffer);
 		std::cerr<<"after swap"<<std::endl;
 	}
-/*	for(int i=0;i<abslevels;i++){
+	for(int i=0;i<abslevels;i++){
 		std::cerr<<"frame: "<<count<<" rev i="<<i<<std::endl;
 		rev(w, h, pixels, buffer, count, 0, no_frames);
 		std::swap(pixels, buffer);
-	}*/
+	}
 }
 
 // You may want to play with this to check you understand what is going on
