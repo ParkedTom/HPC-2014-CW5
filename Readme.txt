@@ -1,3 +1,5 @@
+Charlotte Levin & Tom Parker
+
 Improvement Approach
 ==============================================================================
 Keeping in mind that the pixel latency was going to be the evaluation metric the first approach was to divide up the read and write into blocks, rather than processing the whole image in one go. Alongside this, it was attempted to process multiple levels per iteration by extending the kernel reviewed (something which caused more bugs than was considered worthwhile debugging). Following this, parallelism effects were explored.
