@@ -20,26 +20,8 @@ bin/process : src/main.cpp src/processes.cpp
 	clang++ $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert testImage.png -depth 2 gray:- | ./bin/original 8192 8192 2 13 > output.raw
-	convert testImage.png -depth 2 gray:- | ./bin/process  8192 8192 2 13 > output_process.raw
-	cmp --verbose output.raw output_process.raw
-	convert testImage.png -depth 2 gray:- | ./bin/original 8192 8192 2 -13 > output.raw
-	convert testImage.png -depth 2 gray:- | ./bin/process  8192 8192 2 -13 > output_process.raw
-	cmp --verbose output.raw output_process.raw
-	convert testImage.png -depth 8 gray:- | ./bin/original 8192 8192 8 25 > output.raw
-	convert testImage.png -depth 8 gray:- | ./bin/process  8192 8192 8 25 > output_process.raw
-	cmp --verbose output.raw output_process.raw                      
-	convert testImage.png -depth 8 gray:- | ./bin/original 8192 8192 8 -25 > output.raw
-	convert testImage.png -depth 8 gray:- | ./bin/process  8192 8192 8 -25 > output_process.raw
-	cmp --verbose output.raw output_process.raw
-	convert stars.png -depth 8 gray:- | ./bin/original 1632 1170 8 -25 > output.raw 
-	convert stars.png -depth 8 gray:- | ./bin/process  1632 1170 8 -25 > output_process.raw
-	cmp --verbose output.raw output_process.raw                 
-	#convert stars.png -depth 8 gray:- | ./bin/original 1632 1170 8 25 > output.raw
-	#convert stars.png -depth 8 gray:- | ./bin/process  1632 1170 8 25 > output_process.raw 
-	#cmp --verbose output.raw output_process.raw
-	convert testImage.png -depth 32 gray:- | ./bin/original 8192 8192 32 64 > output.raw
-	convert testImage.png -depth 32 gray:- | ./bin/process  8192 8192 32 64 > output_process.raw
+	convert testImage.png -depth 8 gray:- | ./bin/original 8192 8192 8 64 > output.raw
+	convert testImage.png -depth 8 gray:- | ./bin/process  8192 8192 8 64 > output_process.raw
 	cmp --verbose output.raw output_process.raw
 	
 	

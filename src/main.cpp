@@ -11,7 +11,6 @@
 int main(int argc, char *argv[])
 {
 	try{
-		std::cerr<<"Enter Main"<<std::endl;
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
 			fprintf(stderr, "   bits=8 by default\n");
@@ -81,15 +80,9 @@ int main(int argc, char *argv[])
 						}
         }
     }
-		std::cerr<<"K: "<<k<<std::endl;
-		unsigned divide = 0;
-		if(abslevels%2 == 0)
-		{
-			divide = 1;
-		}
+
     
 		unsigned data = h/k; // each frame is h/k rows each
-		std::cerr<<"Data: "<<data<<std::endl;
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
 		
@@ -115,12 +108,6 @@ int main(int argc, char *argv[])
 		std::vector<uint32_t> store(cbStore); 	//interframe store
 		
 		uint64_t store_p; //store pointer
-		std::cerr<<raw_in.size()<<std::endl;
-		std::cerr<<raw_init.size()<<std::endl;
-		std::cerr<<raw_out.size()<<std::endl;
-		std::cerr<<raw_final.size()<<std::endl;
-		std::cerr<<pixels.size()<<std::endl;
-		std::cerr<<store.size()<<std::endl;
 		
 		while(1){
 			if(count==0)
@@ -140,7 +127,7 @@ int main(int argc, char *argv[])
          	store_p = store.size(); //else store the bottom 4*abslevels rows of the first frame
 				}
 								
-				process(levels, w, data, k, pixels_init, count, divide);
+				process(levels, w, data, k, pixels_init, count);
 		
 				//invert(levels, w, h, bits, pixels);
 				
@@ -160,7 +147,7 @@ int main(int argc, char *argv[])
 				unpack_blob(w, data, bits, &raw_in[0], &pixels[store_p]);
 				//write the new frame below the rows from the previous frame
 
-				process(levels, w, data + 4*abslevels, k, pixels, count, divide);
+				process(levels, w, data + 4*abslevels, k, pixels, count);
 				//process 
 				
 				count++; // increment frame count
@@ -189,7 +176,7 @@ int main(int argc, char *argv[])
 				//	else write whole store to pixels
 				}			
 	
-				process(levels, w, data+(store_p/w), k, pixels, count, divide);
+				process(levels, w, data+(store_p/w), k, pixels, count);
 	
 				//process 
 				store_p = store.size(); //store now full

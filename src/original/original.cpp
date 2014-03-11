@@ -233,10 +233,6 @@ void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint3
 
 int main(int argc, char *argv[])
 {
-#ifdef XCODE
-	freopen("input.raw", "r", stdin);
-    freopen("output.raw", "w", stdout);
-#endif
 	try{
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
