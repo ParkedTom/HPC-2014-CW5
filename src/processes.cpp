@@ -137,14 +137,11 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
-//	std::cerr<<"enter erode"<<std::endl;
-		for(unsigned y=0; y<h; y++)
-		{
-			std::cerr<<"enter y for erode Y = "<<y<<std::endl;
+    
+    auto loop_body_y = [=] (unsigned y) {
 			if(y==0){ //First line should only be _processed_ for the first block
 				std::cerr<<"enter first if before if count erode"<<std::endl;
 				if(count == 0){
-//					std::cerr<<"enter first if erode"<<std::endl;
 					out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
 					for(unsigned x=1;x<w-1;x++)
 					{
@@ -153,7 +150,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
 			} else if(y >= (h-1)){ //Last lines should only be _processed_ for final block - otherwise only read.
-//				std::cerr<<"enter second if erode"<<std::endl;
 				out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
 				{
@@ -161,17 +157,20 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
-//				std::cerr<<"enter third if erode"<<"  "<<" "<<y<<std::endl;
 				out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 				for(unsigned x=1; x<w-1; x++)
 				{
 					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
 				}
 				out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
-//				std::cerr<<"leave third if erode"<<"  "<<" "<<y<<std::endl;
 			}	
-//			std::cerr<<"leave for erode"<<"  "<<" "<<y<<std::endl;	
-		}
+
+    };
+
+    tbb::parallel_for(0u, h-1, loop_body_y);
+	/*	for(unsigned y=0; y<h; y++)
+		{
+		} */
 }
 
 uint32_t vmax(uint32_t a, uint32_t b)
