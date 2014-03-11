@@ -27,11 +27,18 @@ test_lenna : bin/original bin/process
 	cat lenna.raw | ./bin/original 512 512 2 15 > lenna_out.raw
 	cat lenna.raw | ./bin/process 512 512 2 15 > lenna_out_proc.raw
 
+test_large : bin/original bin/process
+	cat test.raw | ./bin/original 8192 8192 2 15 > test_out.raw
+	cat test.raw | ./bin/process 8192 8192 2 15 > test_out_proc.raw
+
 compare_stars: test_lenna
 	cmp --verbose output.raw output_process.raw 
 
 compare_lenna: test_lenna
 	cmp --verbose lenna_out.raw lenna_out_proc.raw 
 	
+compare_large: test_large
+	cmp --verbose test_out.raw test_out_proc.raw 
+
 all : bin/process bin/original
 	
