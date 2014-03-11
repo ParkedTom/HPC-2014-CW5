@@ -160,13 +160,17 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned level, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
-	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };;
+	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
+	std::cerr<<"enter erode"<<std::endl;
 	if(level == 0)
 	{
 		for(unsigned y=0; y<h; y++)
 		{
+			std::cerr<<"enter y for erode Y = "<<y<<std::endl;
 			if(y==0){ //First line should only be _processed_ for the first block
+				std::cerr<<"enter first if before if count erode"<<std::endl;
 				if(count == 0){
+					std::cerr<<"enter first if erode"<<std::endl;
 					out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
 					for(unsigned x=1;x<w-1;x++)
 					{
@@ -174,7 +178,8 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 					}
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
-			} else if((y == (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+				std::cerr<<"enter second if erode"<<std::endl;
 				out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
 				{
@@ -182,21 +187,28 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
-				
+				std::cerr<<"enter third if erode"<<"  "<<" "<<y<<std::endl;
 				out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 				for(unsigned x=1; x<w-1; x++)
 				{
 					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
 				}
 				out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
-			}			
+				std::cerr<<"leave third if erode"<<"  "<<" "<<y<<std::endl;
+			}	else if((y==h-1) && (count!=(no_frames-1))){
+				std::cerr<<"enter fourth if erode"<<"  "<<" "<<y<<std::endl;
+				for(unsigned x=0; x<w; x++)
+				{
+					out(x,y)=in(x,y);
+				}
+			}
+			std::cerr<<"leave for erode"<<"  "<<" "<<y<<std::endl;	
 		}
 	}else{
 		for(unsigned y=0; y<h; y++)
 		{
 			if(y==0){ //First line should only be _processed_ for the first block
 				if(count == 0){
-					std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 					out(0,0) = vmin(in(0,0), in(0,1), in(1,0), in(1,1), in(0,2), in(2,0));
 					out(1,0) = vmin(in(0,0), in(1,0), in(2,0), in(3,0), in(0,1), in(1,1), in(2,1), in(1,2));
 					for(unsigned x=2;x<w-2;x++)
@@ -207,7 +219,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
 				} //else do nothing
 			}else if(y==1){
-				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 				out(0,1) = vmin(in(0,0), in(1,0), in(0,1), in(0,2), in(1,1), in(1,2), in(0,3), in(2,1));
 				out(1,1) = vmin(in(0,0), in(1,0), in(2,0), in(1,0), in(1,1), in(2,1), in(3,1), in(0,2), in(1,2), in(2,2), in(1,3));
 				for(unsigned x=2;x<w-2;x++)
@@ -217,7 +228,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				out(w-2,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,1), in(w-2,1), in(w-1,1), in(w-1,2), in(w-2,2), in(w-1,3));
 				out(w-1,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
 			}else if((y >= (h-2)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
-				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 				out(0,h-2) = vmin(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
 				out(0,h-1) = vmin(in(0,h-1), in(1,h-1), in(2,h-1), in(0,h-2), in(1,h-2), in(0,h-3));
 				out(1,h-2) = vmin(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
@@ -242,7 +252,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				out(w-2,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3, h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-4,h-2), in(w-1,h-3), in(w-2,h-3), in(w-3,h-3), in(w-2,h-4));
 				out(w-1,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-1,h-3), in(w-2,h-3), in(w-1,h-4));
 			}*/else	if (y < (h-2)){
-				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 				out(0,y)=vmin(in(0,y-2), in(0,y-1), in(0,y), in(0,y+1), in(0,y+2), in(1,y-1), in(1,y), in(1,y+1), in(2,y));
 				out(1,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y-2), in(1,y-1), in(1,y), in(1,y+1), in(1,y+2), in(2,y-1), in(2,y), in(2,y+1), in(3,y)); //Left hand side edge
 				for(unsigned x=2; x<w-2; x++)
@@ -292,17 +301,20 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32
 uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k, uint32_t l, uint32_t m)
 { return std::max(m,std::max(std::max(l,k),std::max(std::max(i,j),std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c))))))); }
 
-void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned levels, unsigned no_frames)
+void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned level, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
+	std::cerr<<"enter dilate"<<std::endl;
 	
-	if(levels == 0)
+	if(level == 0)
 	{
 		for(unsigned y=0; y<h; y++)
 		{
 			if(y==0){ //First line should only be _processed_ for the first block
+				std::cerr<<"enter first if before count dilate"<<std::endl;
 				if(count == 0){
+					std::cerr<<"enter first if dilate"<<std::endl;
 					out(0,0) = vmax(in(0,0), in(0,1), in(1,0));
 					for(unsigned x=1;x<w-1;x++)
 					{
@@ -311,6 +323,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 					out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
 			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+				std::cerr<<"enter second if dilate"<<std::endl;
 				out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
 				{
@@ -318,6 +331,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				}
 				out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
+				std::cerr<<"enter third if dilate"<<std::endl;
 				
 				out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 				for(unsigned x=1; x<w-1; x++)
@@ -399,19 +413,20 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 	// we flip the order round.
 	auto fwd=levels < 0 ? erode : dilate;
 	auto rev=levels < 0 ? dilate : erode;
-	unsigned abslevels = std::abs(levels)/(divide + 1);
-	
-	std::cerr<<"height: "<<h<<" Loop Size: "<<abslevels<<"\n";
-	
-	
+	unsigned abslevels = std::abs(levels);	
+	std::cerr<<"|Levels| from Process: "<<abslevels<<std::endl;
 	for(int i=0;i<abslevels;i++){
-		fwd(w, h, pixels, buffer, count, divide, no_frames);
+		std::cerr<<"frame: "<<count<<" fwd i="<<i<<std::endl;
+		fwd(w, h, pixels, buffer, count, 0, no_frames);
+		std::cerr<<"before swap"<<std::endl;
 		std::swap(pixels, buffer);
+		std::cerr<<"after swap"<<std::endl;
 	}
-	for(int i=0;i<abslevels;i++){
-		rev(w, h, pixels, buffer, count, divide, no_frames);
+/*	for(int i=0;i<abslevels;i++){
+		std::cerr<<"frame: "<<count<<" rev i="<<i<<std::endl;
+		rev(w, h, pixels, buffer, count, 0, no_frames);
 		std::swap(pixels, buffer);
-	}
+	}*/
 }
 
 // You may want to play with this to check you understand what is going on

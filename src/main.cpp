@@ -11,6 +11,7 @@
 int main(int argc, char *argv[])
 {
 	try{
+		std::cerr<<"Enter Main"<<std::endl;
 		if(argc<3){
 			fprintf(stderr, "Usage: process width height [bits] [levels]\n");
 			fprintf(stderr, "   bits=8 by default\n");
@@ -73,13 +74,14 @@ int main(int argc, char *argv[])
     {
         while (h%k != 0)
         {
-            k -= 0;
+            k -= 1;
 						if(k==1)
 						{
 							break;
 						}
         }
     }
+		std::cerr<<"K: "<<k<<std::endl;
 		unsigned divide = 0;
 		if(abslevels%2 == 0)
 		{
@@ -87,6 +89,7 @@ int main(int argc, char *argv[])
 		}
     
 		unsigned data = h/k; // each frame is h/k rows each
+		std::cerr<<"Data: "<<data<<std::endl;
 		
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
 		
@@ -97,6 +100,7 @@ int main(int argc, char *argv[])
 		uint32_t count = 0; // frame count
 		
 		uint64_t cbPixels = uint64_t(w)*(data + 4*abslevels); // processing container size
+		uint64_t cbPixels_init = uint64_t(w)*(data); // processing container size
 		uint64_t cbStore = uint64_t(w)*4*abslevels; //interframe store size
 		uint64_t cbRaw_in=uint64_t(w)*data*bits/8; 	//input frame size
 		
@@ -107,9 +111,16 @@ int main(int argc, char *argv[])
 		std::vector<uint64_t> raw_final(cbRaw_final/8);
 		
 		std::vector<uint32_t> pixels(cbPixels); // processing container
+		std::vector<uint32_t> pixels_init(cbPixels_init); // processing container
 		std::vector<uint32_t> store(cbStore); 	//interframe store
 		
 		uint64_t store_p; //store pointer
+		std::cerr<<raw_in.size()<<std::endl;
+		std::cerr<<raw_init.size()<<std::endl;
+		std::cerr<<raw_out.size()<<std::endl;
+		std::cerr<<raw_final.size()<<std::endl;
+		std::cerr<<pixels.size()<<std::endl;
+		std::cerr<<store.size()<<std::endl;
 		
 		while(1){
 			if(count==0)
@@ -118,30 +129,32 @@ int main(int argc, char *argv[])
       			{		
       				break;	// No more images   
       			}
-				unpack_blob(w, data, bits, &raw_in[0], &pixels[0]);
+				unpack_blob(w, data, bits, &raw_in[0], &pixels_init[0]);
 				
 				//store bottom rows of pixels
 				if(data < 4*abslevels){ // if first frame is smaller than 4*abslevels rows then store all frame
-					std::copy(pixels.begin(), pixels.begin()+data*w, store.begin());
+					std::copy(pixels_init.begin(), pixels_init.end(), store.begin());
           store_p = data*w;
 				}else{
-					std::copy(pixels.end() - 8*abslevels*w, pixels.end()-4*w*abslevels, store.begin());
+					std::copy(pixels_init.end() - 4*abslevels*w, pixels_init.end(), store.begin());
          	store_p = store.size(); //else store the bottom 4*abslevels rows of the first frame
 				}
+				std::cerr<<"FIRST IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
 				
-				process(levels, w, data, k, pixels, count, divide);
+				process(levels, w, data, k, pixels_init, count, divide);
+				std::cerr<<"after process"<<std::endl;
 				//invert(levels, w, h, bits, pixels);
 				
 	      		count++;//increment frame count
                 
-				pack_blob(w, data - 2*levels, bits, &pixels[0], &raw_init[0]);
+				pack_blob(w, data - 2*abslevels, bits, &pixels_init[0], &raw_init[0]);
 				write_blob(STDOUT_FILENO, cbRaw_init, &raw_init[0]);
 			}else if(count == k-1){
 				if(!read_blob(STDIN_FILENO, cbRaw_in, &raw_in[0]))
       			{
       				break;	// No more images   
       			}
-		
+				
 				std::copy(store.begin(), store.begin()+store_p, pixels.begin()); //put the stored rows at the top 
 				//of the processing frame
 				
@@ -150,7 +163,8 @@ int main(int argc, char *argv[])
 
 				process(levels, w, data + 4*abslevels, k, pixels, count, divide);
 				//process 
-				
+				std::cerr<<"SECOND IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
+				std::cerr<<"FINAL FRAME"<<store_p<<std::endl;
 				count++; // increment frame count
 				
 				pack_blob(w, data + 2*abslevels, bits, &pixels[2*w*abslevels], &raw_final[0]);
@@ -176,8 +190,9 @@ int main(int argc, char *argv[])
 					std::copy(pixels.end() - 4*abslevels*w, pixels.end(), store.begin());
 				//	else write whole store to pixels
 				}			
-
+				std::cerr<<"THIRD IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
 				process(levels, w, data+store_p/w, k, pixels, count, divide);
+				std::cerr<<"after process"<<std::endl;
 				//process 
 				store_p = store.size(); //store now full
 				

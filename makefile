@@ -20,9 +20,22 @@ bin/process : src/main.cpp src/processes.cpp
 	clang++ $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert stars.png -depth 2 gray:- | ./bin/original 1632 1170 2  -2 > output.raw
-	convert stars.png -depth 2 gray:- | ./bin/process 1632 1170  2 -2 > output_process.raw
-	cmp --verbose output.raw output_process.raw
+	convert testImage.png -depth 2 gray:- | ./bin/original 8192 8192 2 13 > output_erode.raw
+	convert testImage.png -depth 2 gray:- | ./bin/process  8192 8192 2 13 > output_process_erode.raw 2> open.txt
+	#cmp --verbose output.raw output_process.raw
+	convert testImage.png -depth 2 gray:- | ./bin/original 8192 8192 2 -13 > output_dilate.raw
+	convert testImage.png -depth 2 gray:- | ./bin/process  8192 8192 2 -13 > output_process_dilate.raw 2> close.txt
+	convert -size 8192X8192 -depth 2 gray:output_dilate.raw output_dilate.png
+	convert -size 8192X8192 -depth 2 gray:output_process_dilate.raw output_process_dilate.png
+	convert -size 8192X8192 -depth 2 gray:output_erode.raw output_erode.png
+	convert -size 8192X8192 -depth 2 gray:output_process_erode.raw output_process_erode.png
+	#cmp --verbose open.txt close.txt
+	cmp --verbose output_erode.raw output_process_erode.raw
+	cmp --verbose output_dilate.raw output_process_dilate.raw
+ #convert testImage.png -depth 8 gray:- | ./bin/original 8192 8192 8 15 > output.raw
+ #convert testImage.png -depth 8 gray:- | ./bin/process  8192 8192 8 15 > output_process.raw
+ #cmp --verbose output.raw output_process.raw
+	
 	
 all : bin/process bin/original
 	
