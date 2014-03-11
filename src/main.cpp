@@ -139,10 +139,9 @@ int main(int argc, char *argv[])
 					std::copy(pixels_init.end() - 4*abslevels*w, pixels_init.end(), store.begin());
          	store_p = store.size(); //else store the bottom 4*abslevels rows of the first frame
 				}
-				std::cerr<<"FIRST IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
-				
+								
 				process(levels, w, data, k, pixels_init, count, divide);
-				std::cerr<<"after process"<<std::endl;
+		
 				//invert(levels, w, h, bits, pixels);
 				
 	      		count++;//increment frame count
@@ -163,8 +162,7 @@ int main(int argc, char *argv[])
 
 				process(levels, w, data + 4*abslevels, k, pixels, count, divide);
 				//process 
-				std::cerr<<"SECOND IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
-				std::cerr<<"FINAL FRAME"<<store_p<<std::endl;
+				
 				count++; // increment frame count
 				
 				pack_blob(w, data + 2*abslevels, bits, &pixels[2*w*abslevels], &raw_final[0]);
@@ -190,9 +188,9 @@ int main(int argc, char *argv[])
 					std::copy(pixels.end() - 4*abslevels*w, pixels.end(), store.begin());
 				//	else write whole store to pixels
 				}			
-				std::cerr<<"THIRD IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
-				process(levels, w, data+store_p/w, k, pixels, count, divide);
-				std::cerr<<"after process"<<std::endl;
+	
+				process(levels, w, data+(store_p/w), k, pixels, count, divide);
+	
 				//process 
 				store_p = store.size(); //store now full
 				
