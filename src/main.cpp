@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "   levels=1 by default\n");
 			exit(1);
 		}
-		
+
 		unsigned w=atoi(argv[1]);
 		unsigned h=atoi(argv[2]);
-		
+
 		unsigned bits=8;
 		if(argc>3){
 			bits=atoi(argv[3]);
@@ -29,18 +29,18 @@ int main(int argc, char *argv[])
 
 		if(bits>32)
 			throw std::invalid_argument("Bits must be <= 32.");
-		
+
 		unsigned tmp=bits;
 		while(tmp!=1){
 			tmp>>=1;
 			if(tmp==0)
 				throw std::invalid_argument("Bits must be a binary power.");
 		}
-		
+
 		if( ((w*bits)%64) != 0){
 			throw std::invalid_argument(" width*bits must be divisible by 64.");
 		}
-		
+
 		int levels=1;
 		if(argc>4){
 			levels=atoi(argv[4]);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 		if(abslevels > vmin(h/4,w/4,64))
 		{
 			abslevels = vmin(h/4,w/4,64);
-			
+
 		}
 		unsigned k = 2;
         uint64_t frameSize =uint64_t(h/k)*uint64_t(w)*uint64_t(bits)/8; //measure frame size for k = 2
@@ -90,30 +90,30 @@ int main(int argc, char *argv[])
     
 		unsigned data = h/k; // each frame is h/k rows each
 		std::cerr<<"Data: "<<data<<std::endl;
-		
+
 		fprintf(stderr, "Processing %d x %d image with %d bits per pixel.\n", w, h, bits);
-		
+
 		uint64_t cbRaw_out=uint64_t(w)*data*bits/8; //Intermedite output buffer size
     uint64_t cbRaw_final=uint64_t(w)*(data + 2*abslevels)*bits/8; //final frame output buffer size
 		uint64_t cbRaw_init=uint64_t(w)*(data - 2*abslevels)*bits/8; //initial frame output buffer size
-		
+
 		uint32_t count = 0; // frame count
-		
+
 		uint64_t cbPixels = uint64_t(w)*(data + 4*abslevels); // processing container size
 		uint64_t cbPixels_init = uint64_t(w)*(data); // processing container size
 		uint64_t cbStore = uint64_t(w)*4*abslevels; //interframe store size
 		uint64_t cbRaw_in=uint64_t(w)*data*bits/8; 	//input frame size
-		
+
 		//raw image containers		
 		std::vector<uint64_t> raw_in(cbRaw_in/8);
 		std::vector<uint64_t> raw_init(cbRaw_init/8);
 		std::vector<uint64_t> raw_out(cbRaw_out/8);
 		std::vector<uint64_t> raw_final(cbRaw_final/8);
-		
+
 		std::vector<uint32_t> pixels(cbPixels); // processing container
 		std::vector<uint32_t> pixels_init(cbPixels_init); // processing container
 		std::vector<uint32_t> store(cbStore); 	//interframe store
-		
+
 		uint64_t store_p; //store pointer
 		std::cerr<<raw_in.size()<<std::endl;
 		std::cerr<<raw_init.size()<<std::endl;
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 		std::cerr<<raw_final.size()<<std::endl;
 		std::cerr<<pixels.size()<<std::endl;
 		std::cerr<<store.size()<<std::endl;
-		
+
 		while(1){
 			if(count==0)
 			{
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
       				break;	// No more images   
       			}
 				unpack_blob(w, data, bits, &raw_in[0], &pixels_init[0]);
-				
+
 				//store bottom rows of pixels
 				if(data < 4*abslevels){ // if first frame is smaller than 4*abslevels rows then store all frame
 					std::copy(pixels_init.begin(), pixels_init.end(), store.begin());
@@ -140,11 +140,11 @@ int main(int argc, char *argv[])
          	store_p = store.size(); //else store the bottom 4*abslevels rows of the first frame
 				}
 				std::cerr<<"FIRST IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
-				
+
 				process(levels, w, data, k, pixels_init, count, divide);
 				std::cerr<<"after process"<<std::endl;
 				//invert(levels, w, h, bits, pixels);
-				
+
 	      		count++;//increment frame count
                 
 				pack_blob(w, data - 2*abslevels, bits, &pixels_init[0], &raw_init[0]);
@@ -154,10 +154,10 @@ int main(int argc, char *argv[])
       			{
       				break;	// No more images   
       			}
-				
+
 				std::copy(store.begin(), store.begin()+store_p, pixels.begin()); //put the stored rows at the top 
 				//of the processing frame
-				
+
 				unpack_blob(w, data, bits, &raw_in[0], &pixels[store_p]);
 				//write the new frame below the rows from the previous frame
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 				std::cerr<<"SECOND IF Frame: "<<count<<" store ptr"<<store_p<<std::endl;
 				std::cerr<<"FINAL FRAME"<<store_p<<std::endl;
 				count++; // increment frame count
-				
+
 				pack_blob(w, data + 2*abslevels, bits, &pixels[2*w*abslevels], &raw_final[0]);
 				//repack the bottom data rows to the raw output buffer
 				write_blob(STDOUT_FILENO, cbRaw_final, &raw_final[0]);
@@ -176,13 +176,13 @@ int main(int argc, char *argv[])
       			{
       				break;	// No more images   
       			}
-				
+
 				std::copy(store.begin(), store.begin()+store_p,pixels.begin());//put the stored rows at the top 
 				//of the processing frame
-				
+
 				unpack_blob(w, data, bits, &raw_in[0], &pixels[store_p]);
 				//write the new frame below the rows from the previous frame
-				
+
 				if(store_p != store.size()) //if store not full copy only the filled rows to the processing vector
 				{
 					std::copy(pixels.end() - 8*abslevels*w + store_p, pixels.end() - 4*w*abslevels + store_p, store.begin());	
@@ -195,16 +195,16 @@ int main(int argc, char *argv[])
 				std::cerr<<"after process"<<std::endl;
 				//process 
 				store_p = store.size(); //store now full
-				
+
 				count++; // increment frame count
-				
+
 				pack_blob(w, data, bits, &pixels[2*abslevels*w], &raw_out[0]);
 				//repack the bottom data rows to the raw output buffer
 				write_blob(STDOUT_FILENO, cbRaw_out, &raw_out[0]);
 				//write raw buffer to stdout
 			}
 		}
-		
+
 		return 0;
 	}catch(std::exception &e){
 		std::cerr<<"Caught exception : "<<e.what()<<"\n";

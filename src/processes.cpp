@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
-//#include "tbb/parallel_for.h"
+#include "tbb/parallel_for.h"
 
 ////////////////////////////////////////////
 // Routines for bringing in binary images
@@ -45,20 +45,20 @@ void unpack_blob(unsigned w, unsigned h, unsigned bits, const uint64_t *pRaw, ui
 {
 	uint64_t buffer=0;
 	unsigned bufferedBits=0;
-	
+
 	const uint64_t MASK=0xFFFFFFFFFFFFFFFFULL>>(64-bits);
-	
+
 	for(unsigned i=0;i<w*h;i++){
 		if(bufferedBits==0){
 			buffer=shuffle64(bits, *pRaw++);
 			bufferedBits=64;
 		}
-		
+
 		pUnpacked[i]=buffer&MASK;
 		buffer=buffer>>bits;
 		bufferedBits-=bits;
 	}
-	
+
 	assert(bufferedBits==0);
 }
 
@@ -67,27 +67,27 @@ void pack_blob(unsigned w, unsigned h, unsigned bits, const uint32_t *pUnpacked,
 {
 	uint64_t buffer=0;
 	unsigned bufferedBits=0;
-	
+
 	const uint64_t MASK=0xFFFFFFFFFFFFFFFFULL>>(64-bits);
-	
+
 	for(unsigned i=0;i<w*h;i++){
 		buffer=buffer | (uint64_t(pUnpacked[i]&MASK)<< bufferedBits);
 		bufferedBits+=bits;
-		
+
 		if(bufferedBits==64){
 			*pRaw++ = shuffle64(bits, buffer);
 			buffer=0;
 			bufferedBits=0;
 		}
 	}
-	
+
 	assert(bufferedBits==0);
 }
 
 bool read_blob(int fd, uint64_t cbBlob, void *pBlob)
 {
 	uint8_t *pBytes=(uint8_t*)pBlob;
-	
+
 	uint64_t done=0;
 	while(done<cbBlob){
 		int todo=(int)std::min(uint64_t(1)<<30, cbBlob-done);		
@@ -98,18 +98,18 @@ bool read_blob(int fd, uint64_t cbBlob, void *pBlob)
 			throw std::invalid_argument("Read failure.");
 		done+=got;
 	}
-	
+
 	return true;
 }
 
 void write_blob(int fd, uint64_t cbBlob, const void *pBlob)
 {
 	const uint8_t *pBytes=(const uint8_t*)pBlob;
-	
+
 	uint64_t done=0;
 	while(done<cbBlob){
 		int todo=(int)std::min(uint64_t(1)<<30, cbBlob-done);
-		
+
 		int got=write(fd, pBytes+done, todo);
 		if(got<=0)
 			throw std::invalid_argument("Write failure.");
@@ -132,45 +132,19 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
 
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f)
-{ return std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g)
-{ return std::min(g,std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c)))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h)
-{ return std::min(std::min(g,h),std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c)))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i)
-{ return std::min(i,std::min(std::min(g,h),std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c))))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j)
-{ return std::min(std::min(i,j),std::min(std::min(g,h),std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c))))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k)
-{ return std::min(k,std::min(std::min(i,j),std::min(std::min(g,h),std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c)))))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k, uint32_t l)
-{ return std::min(std::min(l,k),std::min(std::min(i,j),std::min(std::min(g,h),std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c)))))); }
-
-uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k, uint32_t l, uint32_t m)
-{ return std::min(m,std::min(std::min(l,k),std::min(std::min(i,j),std::min(std::min(g,h),std::min(std::min(e,f), std::min(std::min(a,d),std::min(b,c))))))); }
-
 //erode function with parallel for outer loop vmin OpenCL Kernels
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned level, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
-	std::cerr<<"enter erode"<<std::endl;
-	if(level == 0)
-	{
+//	std::cerr<<"enter erode"<<std::endl;
 		for(unsigned y=0; y<h; y++)
 		{
 			std::cerr<<"enter y for erode Y = "<<y<<std::endl;
 			if(y==0){ //First line should only be _processed_ for the first block
 				std::cerr<<"enter first if before if count erode"<<std::endl;
 				if(count == 0){
-					std::cerr<<"enter first if erode"<<std::endl;
+//					std::cerr<<"enter first if erode"<<std::endl;
 					out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
 					for(unsigned x=1;x<w-1;x++)
 					{
@@ -178,8 +152,8 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 					}
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
-			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
-				std::cerr<<"enter second if erode"<<std::endl;
+			} else if(y >= (h-1)){ //Last lines should only be _processed_ for final block - otherwise only read.
+//				std::cerr<<"enter second if erode"<<std::endl;
 				out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
 				{
@@ -187,82 +161,17 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				}
 				out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
-				std::cerr<<"enter third if erode"<<"  "<<" "<<y<<std::endl;
+//				std::cerr<<"enter third if erode"<<"  "<<" "<<y<<std::endl;
 				out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 				for(unsigned x=1; x<w-1; x++)
 				{
 					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
 				}
 				out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
-				std::cerr<<"leave third if erode"<<"  "<<" "<<y<<std::endl;
-			}	else if((y==h-1) && (count!=(no_frames-1))){
-				std::cerr<<"enter fourth if erode"<<"  "<<" "<<y<<std::endl;
-				for(unsigned x=0; x<w; x++)
-				{
-					out(x,y)=in(x,y);
-				}
-			}
-			std::cerr<<"leave for erode"<<"  "<<" "<<y<<std::endl;	
+//				std::cerr<<"leave third if erode"<<"  "<<" "<<y<<std::endl;
+			}	
+//			std::cerr<<"leave for erode"<<"  "<<" "<<y<<std::endl;	
 		}
-	}else{
-		for(unsigned y=0; y<h; y++)
-		{
-			if(y==0){ //First line should only be _processed_ for the first block
-				if(count == 0){
-					out(0,0) = vmin(in(0,0), in(0,1), in(1,0), in(1,1), in(0,2), in(2,0));
-					out(1,0) = vmin(in(0,0), in(1,0), in(2,0), in(3,0), in(0,1), in(1,1), in(2,1), in(1,2));
-					for(unsigned x=2;x<w-2;x++)
-					{
-						out(x,0) = vmin(in(x,0), in(x-2,0), in(x-1,0), in(x+1,0), in(x+2,0), in(x-1,1), in(x,1), in(x+1,1), in(x,2));
-					}
-					out(w-2,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-4,0), in(w-1,1), in(w-2,1), in(w-3,1), in(w-2,2));
-					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
-				} //else do nothing
-			}else if(y==1){
-				out(0,1) = vmin(in(0,0), in(1,0), in(0,1), in(0,2), in(1,1), in(1,2), in(0,3), in(2,1));
-				out(1,1) = vmin(in(0,0), in(1,0), in(2,0), in(1,0), in(1,1), in(2,1), in(3,1), in(0,2), in(1,2), in(2,2), in(1,3));
-				for(unsigned x=2;x<w-2;x++)
-				{
-					out(x,1) = vmin(in(x-1,0), in(x,0), in(x+1,0), in(x,1), in(x-2,1), in(x-1,1), in(x+1,1), in(x+2,1), in(x-1,2), in(x,2), in(x+1,2), in(x,3));
-				}
-				out(w-2,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,1), in(w-2,1), in(w-1,1), in(w-1,2), in(w-2,2), in(w-1,3));
-				out(w-1,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
-			}else if((y >= (h-2)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
-				out(0,h-2) = vmin(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
-				out(0,h-1) = vmin(in(0,h-1), in(1,h-1), in(2,h-1), in(0,h-2), in(1,h-2), in(0,h-3));
-				out(1,h-2) = vmin(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
-				out(1,h-1) = vmin(in(0,h-1), in(0,h-2), in(1,h-1), in(2,h-1), in(3,h-1), in(1,h-2), in(2,h-2), in(1,h-3));
-				for(unsigned x=2;x<w-2; x++)
-				{
-					out(x, h-2) = vmin(in(x,h-2), in(x+1, h-2), in(x+2,h-2), in(x,h-3), in(x+1,h-3), in(x, h-4), in(x-1,h-2), in(x-2, h-2), in(x-1, h-3), in(x-1,h-1), in(x,h-1), in(x+1,h-1));
-					out(x, h-1) = vmin(in(x,h-1), in(x+1, h-1), in(x+2,h-1), in(x,h-2), in(x+1,h-2), in(x, h-3), in(x-1,h-1), in(x-2, h-1), in(x-1, h-2));
-				}
-				out(w-2,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3, h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-4,h-2), in(w-1,h-3), in(w-2,h-3), in(w-3,h-3), in(w-2,h-4));
-				out(w-1,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-1,h-3), in(w-2,h-3), in(w-1,h-4));
-				out(w-2,h-1) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3,h-1), in(w-4,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-2,h-3));
-				out(w-1,h-1) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3,h-1), in(w-1,h-2), in(w-2,h-2), in(w-1,h-3));
-				break;
-			}/*else if((y==h-2) && (count!=(no_frames-1))){
-				out(0,h-2) = vmin(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
-				out(1,h-2) = vmin(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
-				for(unsigned x=2;x<w-2; x++)
-				{
-					out(x, h-2) = vmin(in(x,h-2), in(x+1, h-2), in(x+2,h-2), in(x,h-3), in(x+1,h-3), in(x, h-4), in(x-1,h-2), in(x-2, h-2), in(x-1, h-3), in(x-1,h-1), in(x,h-1), in(x+1,h-1));
-				}				
-				out(w-2,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3, h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-4,h-2), in(w-1,h-3), in(w-2,h-3), in(w-3,h-3), in(w-2,h-4));
-				out(w-1,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-1,h-3), in(w-2,h-3), in(w-1,h-4));
-			}*/else	if (y < (h-2)){
-				out(0,y)=vmin(in(0,y-2), in(0,y-1), in(0,y), in(0,y+1), in(0,y+2), in(1,y-1), in(1,y), in(1,y+1), in(2,y));
-				out(1,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y-2), in(1,y-1), in(1,y), in(1,y+1), in(1,y+2), in(2,y-1), in(2,y), in(2,y+1), in(3,y)); //Left hand side edge
-				for(unsigned x=2; x<w-2; x++)
-				{
-					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x-2,y), in(x+2,y), in(x,y-1), in(x,y+1), in(x,y-2), in(x,y+2), in(x-1,y-1), in(x-1,y+1), in(x+1,y-1), in(x+1,y+1));
-				}
-				out(w-2, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y), in(w-2,y-1), in(w-2,y-2), in(w-2,y+1), in(w-2,y+2), in(w-3, y-1), in(w-3, y+1), in(w-3,y), in(w-4,y)); //Right hand side edge
-				out(w-1, y) = vmin(in(w-1,y), in(w-1,y-1), in(w-1,y-2), in(w-1,y+1), in(w-1,y+2), in(w-2, y-1), in(w-2, y+1), in(w-2,y), in(w-3,y));
-			}			
-		}
-	}
 }
 
 uint32_t vmax(uint32_t a, uint32_t b)
@@ -277,39 +186,13 @@ uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::max(e, std::max(std::max(a,d),std::max(b,c))); }
 
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f)
-{ return std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g)
-{ return std::max(g,std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c)))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h)
-{ return std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c)))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i)
-{ return std::max(i,std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c))))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j)
-{ return std::max(std::max(i,j),std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c))))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k)
-{ return std::max(k,std::max(std::max(i,j),std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c)))))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k, uint32_t l)
-{ return std::max(std::max(l,k),std::max(std::max(i,j),std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c)))))); }
-
-uint32_t vmax(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t i, uint32_t j, uint32_t k, uint32_t l, uint32_t m)
-{ return std::max(m,std::max(std::max(l,k),std::max(std::max(i,j),std::max(std::max(g,h),std::max(std::max(e,f), std::max(std::max(a,d),std::max(b,c))))))); }
-
 void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned level, unsigned no_frames)
 {
 	auto in=[&](int x, int y) -> uint32_t { return input[y*w+x]; };
 	auto out=[&](int x, int y) -> uint32_t & {return output[y*w+x]; };
 	std::cerr<<"enter dilate"<<std::endl;
-	
-	if(level == 0)
-	{
-		for(unsigned y=0; y<h; y++)
+		
+        for(unsigned y=0; y<h; y++)
 		{
 			if(y==0){ //First line should only be _processed_ for the first block
 				std::cerr<<"enter first if before count dilate"<<std::endl;
@@ -322,7 +205,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 					}
 					out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
-			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
+			} else if(y >= (h-1)){ //Last lines should only be _processed_ for final block - otherwise only read.
 				std::cerr<<"enter second if dilate"<<std::endl;
 				out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
 				for(unsigned x=1;x<w-1; x++)
@@ -332,7 +215,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
 				std::cerr<<"enter third if dilate"<<std::endl;
-				
+
 				out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
 				for(unsigned x=1; x<w-1; x++)
 				{
@@ -341,65 +224,6 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 			}			
 		}
-	}else{
-		for(unsigned y=0; y<h; y++)
-		{
-			if(y==0){ //First line should only be _processed_ for the first block
-				if(count == 0){
-					out(0,0) = vmax(in(0,0), in(0,1), in(1,0), in(1,1), in(0,2), in(2,0));
-					out(1,0) = vmax(in(0,0), in(1,0), in(2,0), in(3,0), in(0,1), in(1,1), in(2,1), in(1,2));
-					for(unsigned x=2;x<w-2;x++)
-					{
-						out(x,0) = vmax(in(x,0), in(x-2,0), in(x-1,0), in(x+1,0), in(x+2,0), in(x-1,1), in(x,1), in(x+1,1), in(x,2));
-					}
-					out(w-2,0) = vmax(in(w-1,0), in(w-2,0), in(w-3,0), in(w-4,0), in(w-1,1), in(w-2,1), in(w-3,1), in(w-2,2));
-					out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
-				} //else do nothing
-			}else if(y==1){
-				out(0,1) = vmax(in(0,0), in(1,0), in(0,1), in(0,2), in(1,1), in(1,2), in(0,3), in(2,1));
-				out(1,1) = vmax(in(0,0), in(1,0), in(2,0), in(1,0), in(1,1), in(2,1), in(3,1), in(0,2), in(1,2), in(2,2), in(1,3));
-				for(unsigned x=2;x<w-2;x++)
-				{
-					out(x,1) = vmax(in(x-1,0), in(x,0), in(x+1,0), in(x,1), in(x-2,1), in(x-1,1), in(x+1,1), in(x+2,1), in(x-1,2), in(x,2), in(x+1,2), in(x,3));
-				}
-				out(w-2,0) = vmax(in(w-1,0), in(w-2,0), in(w-3,1), in(w-2,1), in(w-1,1), in(w-1,2), in(w-2,2), in(w-1,3));
-				out(w-1,0) = vmax(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
-			}else if((y >= (h-2)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
-				out(0,h-2) = vmax(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
-				out(0,h-1) = vmax(in(0,h-1), in(1,h-1), in(2,h-1), in(0,h-2), in(1,h-2), in(0,h-3));
-				out(1,h-2) = vmax(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
-				out(1,h-1) = vmax(in(0,h-1), in(0,h-2), in(1,h-1), in(2,h-1), in(3,h-1), in(1,h-2), in(2,h-2), in(1,h-3));
-				for(unsigned x=2;x<w-2; x++)
-				{
-					out(x, h-2) = vmax(in(x,h-2), in(x+1, h-2), in(x+2,h-2), in(x,h-3), in(x+1,h-3), in(x, h-4), in(x-1,h-2), in(x-2, h-2), in(x-1, h-3), in(x-1,h-1), in(x,h-1), in(x+1,h-1));
-					out(x, h-1) = vmax(in(x,h-1), in(x+1, h-1), in(x+2,h-1), in(x,h-2), in(x+1,h-2), in(x, h-3), in(x-1,h-1), in(x-2, h-1), in(x-1, h-2));
-				}
-				out(w-2,h-2) = vmax(in(w-1,h-1), in(w-2,h-1), in(w-3, h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-4,h-2), in(w-1,h-3), in(w-2,h-3), in(w-3,h-3), in(w-2,h-4));
-				out(w-1,h-2) = vmax(in(w-1,h-1), in(w-2,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-1,h-3), in(w-2,h-3), in(w-1,h-4));
-				out(w-2,h-1) = vmax(in(w-1,h-1), in(w-2,h-1), in(w-3,h-1), in(w-4,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-2,h-3));
-				out(w-1,h-1) = vmax(in(w-1,h-1), in(w-2,h-1), in(w-3,h-1), in(w-1,h-2), in(w-2,h-2), in(w-1,h-3));
-				break;
-			}/*else if((y==h-2) && (count!=(no_frames-1))){
-				out(0,h-2) = vmax(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
-				out(1,h-2) = vmax(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
-				for(unsigned x=2;x<w-2; x++)
-				{
-					out(x, h-2) = vmax(in(x,h-2), in(x+1, h-2), in(x+2,h-2), in(x,h-3), in(x+1,h-3), in(x, h-4), in(x-1,h-2), in(x-2, h-2), in(x-1, h-3), in(x-1,h-1), in(x,h-1), in(x+1,h-1));
-				}				
-				out(w-2,h-2) = vmax(in(w-1,h-1), in(w-2,h-1), in(w-3, h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-4,h-2), in(w-1,h-3), in(w-2,h-3), in(w-3,h-3), in(w-2,h-4));
-				out(w-1,h-2) = vmax(in(w-1,h-1), in(w-2,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-1,h-3), in(w-2,h-3), in(w-1,h-4));
-			}*/else	if (y < (h-2)){
-				out(0,y)=vmax(in(0,y-2), in(0,y-1), in(0,y), in(0,y+1), in(0,y+2), in(1,y-1), in(1,y), in(1,y+1), in(2,y));
-				out(1,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y-2), in(1,y-1), in(1,y), in(1,y+1), in(1,y+2), in(2,y-1), in(2,y), in(2,y+1), in(3,y)); //Left hand side edge
-				for(unsigned x=2; x<w-2; x++)
-				{
-					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x-2,y), in(x+2,y), in(x,y-1), in(x,y+1), in(x,y-2), in(x,y+2), in(x-1,y-1), in(x-1,y+1), in(x+1,y-1), in(x+1,y+1));
-				}
-				out(w-2, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y), in(w-2,y-1), in(w-2,y-2), in(w-2,y+1), in(w-2,y+2), in(w-3, y-1), in(w-3, y+1), in(w-3,y), in(w-4,y)); //Right hand side edge
-				out(w-1, y) = vmax(in(w-1,y), in(w-1,y-1), in(w-1,y-2), in(w-1,y+1), in(w-1,y+2), in(w-2, y-1), in(w-2, y+1), in(w-2,y), in(w-3,y));
-			}			
-		}
-	}
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -408,7 +232,7 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector<uint32_t> &pixels, uint32_t count, unsigned divide)
 {
 	std::vector<uint32_t> buffer(pixels.size());
-	
+
 	// Depending on whether levels is positive or negative,
 	// we flip the order round.
 	auto fwd=levels < 0 ? erode : dilate;
@@ -422,22 +246,19 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 		std::swap(pixels, buffer);
 		std::cerr<<"after swap"<<std::endl;
 	}
-/*	for(int i=0;i<abslevels;i++){
+	for(int i=0;i<abslevels;i++){
 		std::cerr<<"frame: "<<count<<" rev i="<<i<<std::endl;
 		rev(w, h, pixels, buffer, count, 0, no_frames);
 		std::swap(pixels, buffer);
-	}*/
+	}
 }
 
 // You may want to play with this to check you understand what is going on
 void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint32_t> &pixels)
 {
 	uint32_t mask=0xFFFFFFFFul>>bits;
-	
+
 	for(unsigned i=0;i<w*h;i++){
 		pixels[i]=mask-pixels[i];
 	}
 }
-
-
-
