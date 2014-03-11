@@ -20,8 +20,8 @@ bin/process : src/main.cpp src/processes.cpp
 	$(CXX) $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
 test : bin/original bin/process
-	convert stars.png -depth 2 gray:- | ./bin/original 1632 1170 2 -1 > output.raw
-	convert stars.png -depth 2 gray:- | ./bin/process 1632 1170 2 -1 > output_process.raw
+	convert stars.png -depth 2 gray:- | ./bin/original 1632 1170 2  -2 > output.raw
+	convert stars.png -depth 2 gray:- | ./bin/process 1632 1170  2 -2 > output_process.raw
 	cmp --verbose output.raw output_process.raw
 	
 all : bin/process bin/original
