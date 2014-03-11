@@ -19,10 +19,19 @@ bin/original : src/original/original.cpp
 bin/process : src/main.cpp src/processes.cpp
 	$(CXX) $(CPPFLAGS)  src/main.cpp src/processes.cpp -o $@ $(LDFLAGS) $(LDLIBS)
 	
-test : bin/original bin/process
-	convert stars.png -depth 2 gray:- | ./bin/original 1632 1170 2  -2 > output.raw
-	convert stars.png -depth 2 gray:- | ./bin/process 1632 1170  2 -2 > output_process.raw
-	cmp --verbose output.raw output_process.raw
+test_stars : bin/original bin/process
+	cat stars.raw | ./bin/original 1632 1170 2 15 > output.raw
+	cat stars.raw | ./bin/process 1632 1170 2 15 > output_process.raw
+
+test_lenna : bin/original bin/process
+	cat lenna.raw | ./bin/original 512 512 2 15 > lenna_out.raw
+	cat lenna.raw | ./bin/process 512 512 2 15 > lenna_out_proc.raw
+
+compare_stars: test_lenna
+	cmp --verbose output.raw output_process.raw 
+
+compare_lenna: test_lenna
+	cmp --verbose lenna_out.raw lenna_out_proc.raw 
 	
 all : bin/process bin/original
 	

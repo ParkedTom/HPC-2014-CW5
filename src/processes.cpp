@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
-//#include "tbb/parallel_for.h"
+#include "tbb/parallel_for.h"
 
 ////////////////////////////////////////////
 // Routines for bringing in binary images
@@ -15,28 +15,28 @@
 /*! Reverse the orders of bits if necessary
     \note This is laborious and a bit pointless. I'm sure it could be removed, or at least moved...
     */
-    uint64_t shuffle64(unsigned bits, uint64_t x)
-    {
-            if(bits==1){
-               x=((x&0x0101010101010101ull)<<7)
-               | ((x&0x0202020202020202ull)<<5)
-               | ((x&0x0404040404040404ull)<<3)
-               | ((x&0x0808080808080808ull)<<1)
-               | ((x&0x1010101010101010ull)>>1)
-               | ((x&0x2020202020202020ull)>>3)
-               | ((x&0x4040404040404040ull)>>5)
-               | ((x&0x8080808080808080ull)>>7);
-            }else if(bits==2){
-              x=((x&0x0303030303030303ull)<<6)
-              | ((x&0x0c0c0c0c0c0c0c0cull)<<2)
-              | ((x&0x3030303030303030ull)>>2)
-              | ((x&0xc0c0c0c0c0c0c0c0ull)>>6);
-            }else if(bits==4){
-              x=((x&0x0f0f0f0f0f0f0f0full)<<4)
-              | ((x&0xf0f0f0f0f0f0f0f0ull)>>4);
-              }
-        return x;
-    }
+uint64_t shuffle64(unsigned bits, uint64_t x)
+{
+     if(bits==1){
+        x=((x&0x0101010101010101ull)<<7)
+        | ((x&0x0202020202020202ull)<<5)
+        | ((x&0x0404040404040404ull)<<3)
+        | ((x&0x0808080808080808ull)<<1)
+        | ((x&0x1010101010101010ull)>>1)
+        | ((x&0x2020202020202020ull)>>3)
+        | ((x&0x4040404040404040ull)>>5)
+        | ((x&0x8080808080808080ull)>>7);
+     }else if(bits==2){
+        x=((x&0x0303030303030303ull)<<6)
+        | ((x&0x0c0c0c0c0c0c0c0cull)<<2)
+        | ((x&0x3030303030303030ull)>>2)
+        | ((x&0xc0c0c0c0c0c0c0c0ull)>>6);
+     }else if(bits==4){
+        x=((x&0x0f0f0f0f0f0f0f0full)<<4)
+        | ((x&0xf0f0f0f0f0f0f0f0ull)>>4);
+        }
+     return x;
+}
 
 
 
@@ -166,26 +166,38 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 			if(y==0){ //First line should only be _processed_ for the first block
 				if(count == 0){
 					out(0,0) = vmin(in(0,0), in(0,1), in(1,0));
-					for(unsigned x=1;x<w-1;x++)
+					auto loop_body = [=](size_t x){
+						out(x,0)=vmin(in(x,0), in(x-1,0), in(x+1,0), in(x,1));
+                    };
+                    tbb::parallel_for(1u, w-1, loop_body);
+					/*for(unsigned x=1;x<w-1;x++)
 					{
 						out(x,0)=vmin(in(x,0), in(x-1,0), in(x+1,0), in(x,1));
-					}
+					}*/
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
 			} else if((y == (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
 				out(0, y) = vmin(in(0,y), in(0, y-1), in(1, y));
-				for(unsigned x=1;x<w-1; x++)
+				auto loop_body = [=](size_t x){
+					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
+                };
+                tbb::parallel_for(1u, w-1, loop_body);
+				/*for(unsigned x=1;x<w-1; x++)
 				{
 					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
-				}
+				}*/
 				out(w-1, y) = vmin(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
 				
 				out(0,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
-				for(unsigned x=1; x<w-1; x++)
+				auto loop_body = [=](size_t x){
+					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
+                };
+                tbb::parallel_for(1u, w-1, loop_body);
+				/*for(unsigned x=1; x<w-1; x++)
 				{
 					out(x, y) = vmin(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
-				}
+				}*/
 				out(w-1, y) = vmin(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 			}			
 		}
@@ -194,7 +206,6 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 		{
 			if(y==0){ //First line should only be _processed_ for the first block
 				if(count == 0){
-					std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 					out(0,0) = vmin(in(0,0), in(0,1), in(1,0), in(1,1), in(0,2), in(2,0));
 					out(1,0) = vmin(in(0,0), in(1,0), in(2,0), in(3,0), in(0,1), in(1,1), in(2,1), in(1,2));
 					for(unsigned x=2;x<w-2;x++)
@@ -205,7 +216,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 					out(w-1,0)=vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
 				} //else do nothing
 			}else if(y==1){
-				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
+//				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 				out(0,1) = vmin(in(0,0), in(1,0), in(0,1), in(0,2), in(1,1), in(1,2), in(0,3), in(2,1));
 				out(1,1) = vmin(in(0,0), in(1,0), in(2,0), in(1,0), in(1,1), in(2,1), in(3,1), in(0,2), in(1,2), in(2,2), in(1,3));
 				for(unsigned x=2;x<w-2;x++)
@@ -215,7 +226,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				out(w-2,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,1), in(w-2,1), in(w-1,1), in(w-1,2), in(w-2,2), in(w-1,3));
 				out(w-1,0) = vmin(in(w-1,0), in(w-2,0), in(w-3,0), in(w-1,1), in(w-2,1), in(w-1,2));
 			}else if((y >= (h-2)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
-				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
+//				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
 				out(0,h-2) = vmin(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
 				out(0,h-1) = vmin(in(0,h-1), in(1,h-1), in(2,h-1), in(0,h-2), in(1,h-2), in(0,h-3));
 				out(1,h-2) = vmin(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
@@ -230,17 +241,7 @@ void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vect
 				out(w-2,h-1) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3,h-1), in(w-4,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-2,h-3));
 				out(w-1,h-1) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3,h-1), in(w-1,h-2), in(w-2,h-2), in(w-1,h-3));
 				break;
-			}/*else if((y==h-2) && (count!=(no_frames-1))){
-				out(0,h-2) = vmin(in(0,h-1), in(1,h-1), in(0,h-2), in(1,h-2), in(2,h-2), in(0,h-3), in(1,h-3), in(0,h-4));
-				out(1,h-2) = vmin(in(0,h-1), in(0,h-2), in(0,h-3), in(1,h-1), in(2,h-1), in(1,h-2), in(2,h-2), in(3,h-2), in(1,h-3), in(2,h-3), in(1,h-4));
-				for(unsigned x=2;x<w-2; x++)
-				{
-					out(x, h-2) = vmin(in(x,h-2), in(x+1, h-2), in(x+2,h-2), in(x,h-3), in(x+1,h-3), in(x, h-4), in(x-1,h-2), in(x-2, h-2), in(x-1, h-3), in(x-1,h-1), in(x,h-1), in(x+1,h-1));
-				}				
-				out(w-2,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-3, h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-4,h-2), in(w-1,h-3), in(w-2,h-3), in(w-3,h-3), in(w-2,h-4));
-				out(w-1,h-2) = vmin(in(w-1,h-1), in(w-2,h-1), in(w-1,h-2), in(w-2,h-2), in(w-3,h-2), in(w-1,h-3), in(w-2,h-3), in(w-1,h-4));
-			}*/else	if (y < (h-2)){
-				std::cerr<<"Frame: "<<count<<"y = "<<y<<"\n";
+			}else	if (y < (h-2)){
 				out(0,y)=vmin(in(0,y-2), in(0,y-1), in(0,y), in(0,y+1), in(0,y+2), in(1,y-1), in(1,y), in(1,y+1), in(2,y));
 				out(1,y)=vmin(in(0, y-1), in(0, y+1), in(0,y), in(1,y-2), in(1,y-1), in(1,y), in(1,y+1), in(1,y+2), in(2,y-1), in(2,y), in(2,y+1), in(3,y)); //Left hand side edge
 				for(unsigned x=2; x<w-2; x++)
@@ -302,30 +303,38 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 			if(y==0){ //First line should only be _processed_ for the first block
 				if(count == 0){
 					out(0,0) = vmax(in(0,0), in(0,1), in(1,0));
-					for(unsigned x=1;x<w-1;x++)
-					{
+					auto loop_body = [=](size_t x){
 						out(x,0)=vmax(in(x,0), in(x-1,0), in(x+1,0), in(x,1));
-					}
+                    };
+                    tbb::parallel_for(1u, w-1, loop_body);
+                    
 					out(w-1,0)=vmax(in(w-1,0), in(w-2,0), in(w-1,1));
 				} //else do nothing
 			} else if((y >= (h-1)) && (count==(no_frames-1))){ //Last lines should only be _processed_ for final block - otherwise only read.
 				out(0, y) = vmax(in(0,y), in(0, y-1), in(1, y));
-				for(unsigned x=1;x<w-1; x++)
-				{
+				auto loop_body = [=](size_t x){
 					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1));
-				}
+                };
+                tbb::parallel_for(1u, w-1, loop_body);
+				/*for(unsigned x=1;x<w-1; x++)
+				{
+				}*/
 				out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
 				
 				out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
-				for(unsigned x=1; x<w-1; x++)
+				auto loop_body = [=](size_t x){
+					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
+                };
+                tbb::parallel_for(1u, w-1, loop_body);
+				/*for(unsigned x=1; x<w-1; x++)
 				{
 					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
-				}
+				}*/
 				out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 			}			
 		}
-	}else{
+	}else{ //levels == 1 ie process 2 levels
 		for(unsigned y=0; y<h; y++)
 		{
 			if(y==0){ //First line should only be _processed_ for the first block
@@ -397,17 +406,15 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 	// we flip the order round.
 	auto fwd=levels < 0 ? erode : dilate;
 	auto rev=levels < 0 ? dilate : erode;
-	unsigned abslevels = std::abs(levels)/(divide + 1);
-	
-	std::cerr<<"height: "<<h<<" Loop Size: "<<abslevels<<"\n";
+	unsigned abslevels = std::abs(levels);
 	
 	
 	for(int i=0;i<abslevels;i++){
-		fwd(w, h, pixels, buffer, count, divide, no_frames);
+		fwd(w, h, pixels, buffer, count, 0, no_frames);
 		std::swap(pixels, buffer);
 	}
 	for(int i=0;i<abslevels;i++){
-		rev(w, h, pixels, buffer, count, divide, no_frames);
+		rev(w, h, pixels, buffer, count, 0, no_frames);
 		std::swap(pixels, buffer);
 	}
 }
