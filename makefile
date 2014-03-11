@@ -1,4 +1,4 @@
-CPPFLAGS = -std=c++11 -Wall -I include -g
+CPPFLAGS = -std=c++11 -Wall -I include -g 
 LDFLAGS = 
 LDLIBS = -lm -ltbb
 CPPFLAGS += -O2
@@ -35,7 +35,6 @@ test : bin/original bin/process
  #convert testImage.png -depth 8 gray:- | ./bin/original 8192 8192 8 15 > output.raw
  #convert testImage.png -depth 8 gray:- | ./bin/process  8192 8192 8 15 > output_process.raw
  #cmp --verbose output.raw output_process.raw
-	
 	
 all : bin/process bin/original
 	

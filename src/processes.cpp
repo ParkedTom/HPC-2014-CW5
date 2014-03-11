@@ -13,29 +13,29 @@
 // Routines for bringing in binary images
 
 /*! Reverse the orders of bits if necessary
-	\note This is laborious and a bit pointless. I'm sure it could be removed, or at least moved...
-*/
+    \note This is laborious and a bit pointless. I'm sure it could be removed, or at least moved...
+    */
 uint64_t shuffle64(unsigned bits, uint64_t x)
 {
-	if(bits==1){
-		x=((x&0x0101010101010101ull)<<7)
-			| ((x&0x0202020202020202ull)<<5)
-			| ((x&0x0404040404040404ull)<<3)
-			| ((x&0x0808080808080808ull)<<1)
-			| ((x&0x1010101010101010ull)>>1)
-			| ((x&0x2020202020202020ull)>>3)
-			| ((x&0x4040404040404040ull)>>5)
-			| ((x&0x8080808080808080ull)>>7);
-	}else if(bits==2){
-		x=((x&0x0303030303030303ull)<<6)
-			| ((x&0x0c0c0c0c0c0c0c0cull)<<2)
-			| ((x&0x3030303030303030ull)>>2)
-			| ((x&0xc0c0c0c0c0c0c0c0ull)>>6);
-	}else if(bits==4){
-		x=((x&0x0f0f0f0f0f0f0f0full)<<4)
-			| ((x&0xf0f0f0f0f0f0f0f0ull)>>4);
-	}
-	return x;
+     if(bits==1){
+        x=((x&0x0101010101010101ull)<<7)
+        | ((x&0x0202020202020202ull)<<5)
+        | ((x&0x0404040404040404ull)<<3)
+        | ((x&0x0808080808080808ull)<<1)
+        | ((x&0x1010101010101010ull)>>1)
+        | ((x&0x2020202020202020ull)>>3)
+        | ((x&0x4040404040404040ull)>>5)
+        | ((x&0x8080808080808080ull)>>7);
+     }else if(bits==2){
+        x=((x&0x0303030303030303ull)<<6)
+        | ((x&0x0c0c0c0c0c0c0c0cull)<<2)
+        | ((x&0x3030303030303030ull)>>2)
+        | ((x&0xc0c0c0c0c0c0c0c0ull)>>6);
+     }else if(bits==4){
+        x=((x&0x0f0f0f0f0f0f0f0full)<<4)
+        | ((x&0xf0f0f0f0f0f0f0f0ull)>>4);
+        }
+     return x;
 }
 
 
@@ -104,17 +104,16 @@ bool read_blob(int fd, uint64_t cbBlob, void *pBlob)
 
 void write_blob(int fd, uint64_t cbBlob, const void *pBlob)
 {
-	const uint8_t *pBytes=(const uint8_t*)pBlob;
+    const uint8_t *pBytes=(const uint8_t*)pBlob;
+    uint64_t done=0;
+    while(done<cbBlob){
+       int todo=(int)std::min(uint64_t(1)<<30, cbBlob-done);
 
-	uint64_t done=0;
-	while(done<cbBlob){
-		int todo=(int)std::min(uint64_t(1)<<30, cbBlob-done);
-
-		int got=write(fd, pBytes+done, todo);
-		if(got<=0)
-			throw std::invalid_argument("Write failure.");
-		done+=got;
-	}
+       int got=write(fd, pBytes+done, todo);
+       if(got<=0)
+           throw std::invalid_argument("Write failure.");
+           done+=got;
+       }
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -131,6 +130,7 @@ uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
 
 uint32_t vmin(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e)
 { return std::min(e, std::min(std::min(a,d),std::min(b,c))); }
+
 
 //erode function with parallel for outer loop vmin OpenCL Kernels
 void erode(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vector<uint32_t> &output, uint32_t count, unsigned level, unsigned no_frames)
@@ -215,12 +215,15 @@ void dilate(unsigned w, unsigned h, const std::vector<uint32_t> &input, std::vec
 				out(w-1, y) = vmax(in(w-1,y), in(w-2, y), in(w-1, y-1));
 			} else if (y < (h-1)){
 				std::cerr<<"enter third if dilate"<<std::endl;
-
 				out(0,y)=vmax(in(0, y-1), in(0, y+1), in(0,y), in(1,y)); //Left hand side edge
-				for(unsigned x=1; x<w-1; x++)
+				auto loop_body = [=](size_t x){
+					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
+                };
+                tbb::parallel_for(1u, w-1, loop_body);
+				/*for(unsigned x=1; x<w-1; x++)
 				{
 					out(x, y) = vmax(in(x,y), in(x-1,y), in(x+1,y), in(x,y-1), in(x,y+1));
-				}
+				}*/
 				out(w-1, y) = vmax(in(w-1, y-1), in(w-1, y+1), in(w-1,y), in(w-2,y)); //Right hand side edge
 			}			
 		}
@@ -252,7 +255,6 @@ void process(int levels, unsigned w, unsigned h, unsigned no_frames, std::vector
 		std::swap(pixels, buffer);
 	}
 }
-
 // You may want to play with this to check you understand what is going on
 void invert(int levels, unsigned w, unsigned h, unsigned bits, std::vector<uint32_t> &pixels)
 {
